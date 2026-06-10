@@ -69,6 +69,8 @@ options:
           all: All Content
   translation:
     title: Translation
+  importExport:
+    title: Import / Export
 side:
   sourceLang: Source Language
   targetLang: Target Language

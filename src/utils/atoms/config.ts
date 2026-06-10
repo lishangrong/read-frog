@@ -4,6 +4,7 @@ import { atom } from 'jotai'
 
 import { selectAtom } from 'jotai/utils'
 
+import { configSchema } from '@/types/config/config'
 import { CONFIG_STORAGE_KEY, DEFAULT_CONFIG } from '../constants/config'
 import { storageAdapter } from './storage-adapter'
 
@@ -11,14 +12,68 @@ export const configAtom = atom<Config>(DEFAULT_CONFIG)
 
 const overwriteMerge = (_target: unknown[], source: unknown[]) => source
 
+/**
+ * Result type for validated config writes.
+ * When validation fails, the write is rejected and an error is returned.
+ */
+export type ConfigWriteResult =
+  | { success: true, config: Config }
+  | { success: false, error: { message: string, issues: { path: string, message: string }[] } }
+
+/**
+ * Validated config write atom.
+ * Deep-merges the patch into the current config, validates with Zod,
+ * and rejects the write if validation fails.
+ */
 export const writeConfigAtom = atom(
   null,
-  async (get, set, patch: Partial<Config>) => {
-    // ! If we don't use HydrateAtoms, there will be a bug that every time refresh the page, the config will be reset to default
-    // ! because we call this function when the page is loaded by extractContent useQuery, that time, configAtom is DEFAULT_CONFIG and the next will be deepmerge(DEFAULT_CONFIG, patch)
-    const next = deepmerge(get(configAtom), patch, { arrayMerge: overwriteMerge })
-    set(configAtom, next) // UI 乐观更新，这会让 react 多一次渲染，因为 react 渲染只有浅比较，前后两个 object 值一样会触发两次渲染
-    await storageAdapter.set(CONFIG_STORAGE_KEY, next) // 成功后会调用 onMount 的 callback，设置真正的值，第二次渲染
+  async (get, set, patch: Partial<Config>): Promise<ConfigWriteResult> => {
+    const current = get(configAtom)
+    const next = deepmerge(current, patch, { arrayMerge: overwriteMerge })
+
+    // Strict Zod validation — reject invalid config
+    const result = configSchema.safeParse(next)
+    if (!result.success) {
+      const issues = result.error.issues.map(issue => ({
+        path: issue.path.join('.'),
+        message: issue.message,
+      }))
+      console.warn('[ConfigManager] Rejected invalid config write:', issues)
+      return {
+        success: false,
+        error: { message: 'Configuration validation failed', issues },
+      }
+    }
+
+    set(configAtom, result.data) // UI optimistic update
+    await storageAdapter.set(CONFIG_STORAGE_KEY, result.data)
+    return { success: true, config: result.data }
+  },
+)
+
+/**
+ * Replace the entire config atom with a new value.
+ * Used by import/restore functionality. Validates before applying.
+ */
+export const replaceConfigAtom = atom(
+  null,
+  async (_get, set, newConfig: Config): Promise<ConfigWriteResult> => {
+    const result = configSchema.safeParse(newConfig)
+    if (!result.success) {
+      const issues = result.error.issues.map(issue => ({
+        path: issue.path.join('.'),
+        message: issue.message,
+      }))
+      console.warn('[ConfigManager] Rejected invalid config replacement:', issues)
+      return {
+        success: false,
+        error: { message: 'Configuration validation failed', issues },
+      }
+    }
+
+    set(configAtom, result.data)
+    await storageAdapter.set(CONFIG_STORAGE_KEY, result.data)
+    return { success: true, config: result.data }
   },
 )
 
@@ -28,23 +83,14 @@ configAtom.onMount = (setAtom: (newValue: Config) => void) => {
   return unwatch
 }
 
-// export const configFieldAtom = <K extends Keys>(key: K) => {
-//   const readAtom = selectAtom(configAtom, (c) => c[key]); // 现在是同步
-//   const writeAtom = atom(null, (_get, set, val: Config[K]) =>
-//     set(writeConfigAtom, { [key]: val })
-//   );
-//   return [readAtom, writeAtom] as const;
-// };
-
 type Keys = keyof Config
 
 export function getConfigFieldAtom<K extends Keys>(key: K) {
-  // 如果不介意"改别的字段也重渲"，可以直接 get(configAtom)[key] 而不使用 selectAtom。
   const sliceAtom = selectAtom(configAtom, c => c[key])
 
   return atom(
     get => get(sliceAtom),
-    (_get, set, newVal: Partial<Config[K]>) =>
+    async (_get, set, newVal: Partial<Config[K]>): Promise<ConfigWriteResult> =>
       set(writeConfigAtom, { [key]: newVal }),
   )
 }

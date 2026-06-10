@@ -7,7 +7,7 @@ import { providersConfigSchema, readConfigSchema, translateConfigSchema } from '
 import { subtitleConfigSchema, ttsConfigSchema } from './tts'
 
 // Language schema
-const languageSchema = z.object({
+export const languageSchema = z.object({
   detectedCode: langCodeISO6393Schema,
   sourceCode: langCodeISO6393Schema.or(z.literal('auto')),
   targetCode: langCodeISO6393Schema,

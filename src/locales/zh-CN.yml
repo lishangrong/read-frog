@@ -69,6 +69,8 @@ options:
           all: 所有内容
   translation:
     title: 翻译
+  importExport:
+    title: 导入 / 导出
 side:
   sourceLang: 来源语言
   targetLang: 目标语言

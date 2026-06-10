@@ -67,6 +67,8 @@ options:
           all: すべてのコンテンツ
   translation:
     title: 翻訳
+  importExport:
+    title: インポート / エクスポート
 side:
   sourceLang: ソース言語
   targetLang: 翻訳言語

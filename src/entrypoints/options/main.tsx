@@ -1,12 +1,13 @@
 import type { Config } from '@/types/config/config'
 import { Provider as JotaiProvider } from 'jotai'
 import { useHydrateAtoms } from 'jotai/utils'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 import ReactDOM from 'react-dom/client'
 import { HashRouter } from 'react-router'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { configAtom } from '@/utils/atoms/config'
+import { isAnyAPIKey } from '@/utils/config/config'
 
 import { DEFAULT_CONFIG } from '@/utils/constants/config'
 import App from './app'
@@ -36,16 +37,22 @@ async function initApp() {
   const root = document.getElementById('root')!
   root.className = 'antialiased bg-background'
 
-  const config = await storage.getItem<Config>('local:config')
+  const [config, needsOnboarding] = await Promise.all([
+    storage.getItem<Config>('local:config'),
+    storage.getItem<boolean>('local:__needsOnboarding'),
+  ])
+
+  const effectiveConfig = config ?? DEFAULT_CONFIG
+  const showOnboarding = needsOnboarding === true || !isAnyAPIKey(effectiveConfig.providersConfig)
 
   ReactDOM.createRoot(root).render(
     <React.StrictMode>
       <JotaiProvider>
-        <HydrateAtoms initialValues={[[configAtom, config ?? DEFAULT_CONFIG]]}>
+        <HydrateAtoms initialValues={[[configAtom, effectiveConfig]]}>
           <HashRouter>
             <SidebarProvider>
               <AppSidebar />
-              <App />
+              <App showOnboarding={showOnboarding} />
             </SidebarProvider>
           </HashRouter>
         </HydrateAtoms>
