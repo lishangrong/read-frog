@@ -56,6 +56,9 @@ export function useAnalyzeContent() {
         throw new Error('No model string available for summary generation')
       }
       const model = await getReadModel(read.provider, modelString)
+      if (!model) {
+        throw new Error(`Provider "${read.provider}" does not support language models`)
+      }
       const targetLang = LANG_CODE_TO_EN_NAME[language.targetCode]
 
       while (attempts < maxAttempts) {
@@ -122,6 +125,9 @@ async function explainBatch(batch: string[], articleAnalysis: ArticleAnalysis, c
   }
 
   const model = await getReadModel(read.provider, modelString)
+  if (!model) {
+    throw new Error(`Provider "${read.provider}" does not support language models`)
+  }
   while (attempts < MAX_ATTEMPTS) {
     try {
       const { object: articleExplanation } = await generateObject({

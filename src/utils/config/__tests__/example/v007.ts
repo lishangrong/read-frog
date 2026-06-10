@@ -2,7 +2,9 @@ import type { Config } from '@/types/config/config'
 
 export const description = 'Add autoTranslate config'
 
-export const configExample: Config = {
+// This represents a v7 config before migration to v8.
+// Uses `any` because v7 configs have a different shape than the current Config type.
+export const configExample: any = {
   language: {
     detectedCode: 'eng',
     sourceCode: 'auto',

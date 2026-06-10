@@ -1,47 +1,44 @@
 import type { Config } from '@/types/config/config'
 
 import type { ReadProviderNames, translateProviderModels } from '@/types/config/provider'
-import { createDeepSeek } from '@ai-sdk/deepseek'
-import { createOpenAI } from '@ai-sdk/openai'
-
-import { createOpenRouter } from '@openrouter/ai-sdk-provider'
-
-import { createProviderRegistry } from 'ai'
+import { getProviderRegistryInstance } from '@/providers/registry'
 import { CONFIG_STORAGE_KEY, DEFAULT_PROVIDER_CONFIG } from './constants/config'
 
-export async function getProviderRegistry() {
-  const config = await storage.getItem<Config>(`local:${CONFIG_STORAGE_KEY}`)
-
-  return createProviderRegistry({
-    openai: createOpenAI({
-      baseURL: config?.providersConfig?.openai?.baseURL ?? DEFAULT_PROVIDER_CONFIG.openai.baseURL,
-      apiKey: config?.providersConfig?.openai.apiKey,
-    }),
-    deepseek: createDeepSeek({
-      baseURL: config?.providersConfig?.deepseek.baseURL ?? DEFAULT_PROVIDER_CONFIG.deepseek.baseURL,
-      apiKey: config?.providersConfig?.deepseek.apiKey,
-    }),
-    ollama: createOpenAI({
-      baseURL: config?.providersConfig?.ollama.baseURL ?? DEFAULT_PROVIDER_CONFIG.ollama.baseURL,
-      apiKey: config?.providersConfig?.ollama.apiKey,
-    }),
-  })
-}
-
+/**
+ * @deprecated Use getProviderRegistryInstance().get(provider).getLanguageModel(ctx) instead.
+ * Kept for backward compatibility with read.tsx hooks.
+ */
 export async function getTranslateModel(provider: keyof typeof translateProviderModels, model: string) {
   const config = await storage.getItem<Config>(`local:${CONFIG_STORAGE_KEY}`)
-  const registry = await getProviderRegistry()
-  const openrouter = createOpenRouter({
-    apiKey: config?.providersConfig?.openrouter.apiKey,
-    baseURL: config?.providersConfig?.openrouter.baseURL ?? DEFAULT_PROVIDER_CONFIG.openrouter.baseURL,
-  })
-  if (provider === 'openrouter') {
-    return openrouter.languageModel(model)
+  const registry = getProviderRegistryInstance()
+  const contract = registry.get(provider)
+
+  if (!contract.getLanguageModel) {
+    throw new Error(`Provider "${provider}" does not support language models`)
   }
-  return registry.languageModel(`${provider}:${model}`)
+
+  const providerConfig = config?.providersConfig?.[provider as keyof typeof config.providersConfig]
+  return contract.getLanguageModel({
+    apiKey: providerConfig?.apiKey ?? '',
+    baseURL: providerConfig?.baseURL ?? DEFAULT_PROVIDER_CONFIG[provider as keyof typeof DEFAULT_PROVIDER_CONFIG]?.baseURL,
+    model,
+    isCustomModel: false,
+  })
 }
 
+/**
+ * @deprecated Use getProviderRegistryInstance().get(provider).getLanguageModel(ctx) instead.
+ * Kept for backward compatibility with read.tsx hooks.
+ */
 export async function getReadModel(provider: ReadProviderNames, model: string) {
-  const registry = await getProviderRegistry()
-  return registry.languageModel(`${provider}:${model}`)
+  return getTranslateModel(provider, model)
+}
+
+/**
+ * @deprecated Use getProviderRegistryInstance() instead.
+ * Kept for backward compatibility.
+ */
+export async function getProviderRegistry() {
+  // This now returns our custom registry, not the Vercel AI SDK registry
+  return getProviderRegistryInstance()
 }

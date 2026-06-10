@@ -3,6 +3,9 @@ import { generateText } from 'ai'
 
 export async function aiTranslate(provider: LLMTranslateProviderNames, modelString: string, prompt: string) {
   const model = await getTranslateModel(provider, modelString)
+  if (!model) {
+    throw new Error(`Provider "${provider}" does not support language models`)
+  }
   const { text } = await generateText({
     model,
     prompt,

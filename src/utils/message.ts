@@ -14,8 +14,10 @@ interface ProtocolMap {
   pinStateChanged: (data: { isPinned: boolean }) => void
   getPinState: () => boolean
   returnPinState: (data: { isPinned: boolean }) => void
-  // request
+  // request — legacy format (backward compat)
   enqueueRequest: (data: { type: string, params: Record<string, any>, scheduleAt: number, hash: string }) => Promise<any>
+  // request — new unified format using provider registry
+  translateRequest: (data: { providerId: string, text: string, sourceLang: string, targetLang: string, scheduleAt: number, hash: string }) => Promise<string>
 }
 
 export const { sendMessage, onMessage }

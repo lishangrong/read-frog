@@ -27,6 +27,19 @@ options:
       deepseek: Recommend to use in China
       openrouter: The unified interface for multiple LLM providers
       ollama: Local LLM
+      anthropic: Claude models for advanced reasoning
+      gemini: Google's multimodal AI models
+      groq: Ultra-fast inference with LPU
+      mistral: European AI with strong multilingual support
+      cohere: Enterprise-grade language models
+      xai: Grok models from xAI
+      perplexity: AI-powered search and answers
+      cerebras: Fast inference with custom AI chips
+      sambanova: High-performance AI inference
+      together: Open-source model hosting and inference
+      fireworks: Fast inference for open-source models
+      zhipu: GLM models from Zhipu AI (China)
+      moonshot: Kimi models from Moonshot AI (China)
     apiKey:
       showAPIKey: Show API Key
     advancedConfig:

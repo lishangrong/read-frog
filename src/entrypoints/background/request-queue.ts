@@ -1,3 +1,6 @@
+import type { Config } from '@/types/config/config'
+import { CONFIG_STORAGE_KEY, DEFAULT_CONFIG } from '@/utils/constants/config'
+import { getProviderRegistryInstance } from '@/providers/registry'
 import { aiTranslate, googleTranslate, microsoftTranslate } from '@/utils/host/translate/api'
 import { RequestQueue } from '@/utils/request/request-queue'
 
@@ -10,6 +13,27 @@ export function setUpRequestQueue() {
     baseRetryDelayMs: 1_000,
   })
 
+  const registry = getProviderRegistryInstance()
+
+  // New unified handler: uses provider registry for all providers
+  onMessage('translateRequest', async (message) => {
+    const { data } = message
+
+    // Load config from storage to resolve provider context
+    const config = await storage.getItem<Config>(`local:${CONFIG_STORAGE_KEY}`) ?? DEFAULT_CONFIG
+    const ctx = registry.resolveContext(data.providerId, config)
+    const provider = registry.get(data.providerId)
+
+    const thunk = () => provider.translate(ctx, {
+      text: data.text,
+      sourceLang: data.sourceLang,
+      targetLang: data.targetLang,
+    }).then(r => r.translatedText)
+
+    return requestQueue.enqueue(thunk, data.scheduleAt, data.hash)
+  })
+
+  // Legacy handler: kept for backward compatibility
   onMessage('enqueueRequest', (message) => {
     const { data } = message
 

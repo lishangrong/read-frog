@@ -5,6 +5,43 @@ import { Sha256Hex } from '../../hash'
 import { sendMessage } from '../../message'
 import { getTranslateLinePrompt } from '../../prompts/translate-line'
 
+/**
+ * Unified translation function that uses the new provider registry.
+ * Works for ALL provider types (LLM and HTTP translate) through a single interface.
+ * This is the preferred function for new code.
+ */
+export async function translateTextUnified(sourceText: string) {
+  if (!globalConfig) {
+    throw new Error('No global config when translate text')
+  }
+  const provider = globalConfig.translate.provider
+  const cleanSourceText = sourceText.replace(/\u200B/g, '').trim()
+
+  // Determine source and target languages
+  const sourceLang = globalConfig.language.sourceCode === 'auto'
+    ? 'auto'
+    : (ISO6393_TO_6391[globalConfig.language.sourceCode] ?? 'auto')
+  const targetLang = ISO6393_TO_6391[globalConfig.language.targetCode]
+  if (!targetLang) {
+    throw new Error('Invalid target language code')
+  }
+
+  const translatedText = await sendMessage('translateRequest', {
+    providerId: provider,
+    text: cleanSourceText,
+    sourceLang,
+    targetLang,
+    scheduleAt: Date.now(),
+    hash: Sha256Hex(cleanSourceText, provider, sourceLang, targetLang),
+  })
+
+  // Strip thinking tags for deep thinking models
+  const [, extracted = translatedText] = translatedText.match(/<\/think>([\s\S]*)/) || []
+  const finalText = extracted.trim()
+
+  return cleanSourceText === finalText ? '' : finalText
+}
+
 export async function translateText(sourceText: string) {
   if (!globalConfig) {
     throw new Error('No global config when translate text')

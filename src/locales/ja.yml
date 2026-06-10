@@ -26,6 +26,19 @@ options:
       openai: GPT-4oなどのモデルを提供
       deepseek: 中国国内での使用を推奨
       openrouter: 複数のLLMプロバイダを統合するインターフェース
+      anthropic: Claude models for advanced reasoning
+      gemini: Google's multimodal AI models
+      groq: Ultra-fast inference with LPU
+      mistral: European AI with strong multilingual support
+      cohere: Enterprise-grade language models
+      xai: Grok models from xAI
+      perplexity: AI-powered search and answers
+      cerebras: Fast inference with custom AI chips
+      sambanova: High-performance AI inference
+      together: Open-source model hosting and inference
+      fireworks: Fast inference for open-source models
+      zhipu: GLM models from Zhipu AI
+      moonshot: Kimi models from Moonshot AI
     apiKey:
       showAPIKey: APIキーを表示
     advancedConfig:
