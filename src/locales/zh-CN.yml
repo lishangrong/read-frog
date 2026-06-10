@@ -70,6 +70,32 @@ options:
           all: 所有内容
   translation:
     title: 翻译
+  settings:
+    title: 设置
+    export:
+      title: 导出配置
+      description: 将当前配置下载为 JSON 文件
+      includeAPIKeys: 包含 API Key（不建议分享时勾选）
+      button: 导出
+    import:
+      title: 导入配置
+      description: 从之前导出的文件中恢复配置
+      button: 导入
+      errorTitle: 导入错误
+      confirmTitle: 导入配置
+      confirmDescription: 选择如何应用导入的配置
+      overwrite: 覆盖 - 替换所有当前设置
+      merge: 合并 - 保留当前设置并应用导入的更改
+      cancel: 取消
+      confirm: 导入
+    reset:
+      title: 重置配置
+      description: 将所有设置恢复为默认值
+      button: 恢复默认
+      confirmTitle: 确认重置所有设置？
+      confirmDescription: 这将重置所有设置，包括 API Key、提供商选择和偏好设置。此操作无法撤销。
+      cancel: 取消
+      confirm: 重置
 side:
   sourceLang: 来源语言
   targetLang: 目标语言
@@ -94,3 +120,25 @@ noConfig:
     firstOnThe: 在
     optionsPage: 选项
     page: 页
+onboarding:
+  stepProgress: "第 $1 步，共 $2 步"
+  skip: 跳过设置
+  prev: 上一步
+  next: 下一步
+  finish: 完成
+  language:
+    title: 选择您的语言
+    description: 选择您想从网站上学习的语言
+    targetLanguage: 目标语言
+    selectLanguage: 选择语言
+  apiKey:
+    title: 设置 API Key
+    description: 配置至少一个 AI 提供商以启用高级功能。您可以跳过此步骤，稍后再设置。
+  translate:
+    title: 选择翻译提供商
+    description: 选择您偏好的翻译提供商。免费翻译器（Microsoft、Google）无需 API Key 即可使用。
+    provider: 翻译提供商
+  read:
+    title: 选择阅读提供商
+    description: 选择您偏好的 AI 提供商用于文章阅读和分析。
+    provider: 阅读提供商

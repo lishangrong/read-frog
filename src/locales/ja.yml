@@ -69,6 +69,32 @@ options:
           all: すべてのコンテンツ
   translation:
     title: 翻訳
+  settings:
+    title: 設定
+    export:
+      title: 設定をエクスポート
+      description: 現在の設定をJSONファイルとしてダウンロード
+      includeAPIKeys: APIキーを含める（共有時は非推奨）
+      button: エクスポート
+    import:
+      title: 設定をインポート
+      description: 以前エクスポートしたファイルから設定を復元
+      button: インポート
+      errorTitle: インポートエラー
+      confirmTitle: 設定をインポート
+      confirmDescription: インポートした設定の適用方法を選択してください
+      overwrite: 上書き - すべての現在の設定を置き換え
+      merge: マージ - 現在の設定を保持しインポートした変更を適用
+      cancel: キャンセル
+      confirm: インポート
+    reset:
+      title: 設定をリセット
+      description: すべての設定をデフォルト値に戻す
+      button: デフォルトに戻す
+      confirmTitle: すべての設定をリセットしますか？
+      confirmDescription: APIキー、プロバイダーの選択、設定を含むすべての設定がデフォルト値にリセットされます。この操作は取り消せません。
+      cancel: キャンセル
+      confirm: リセット
 side:
   sourceLang: ソース言語
   targetLang: 翻訳言語
@@ -93,3 +119,25 @@ noConfig:
     firstOnThe: する必要があります（
     optionsPage: オプションページ
     page: ）
+onboarding:
+  stepProgress: "ステップ $1 / $2"
+  skip: スキップ
+  prev: 前へ
+  next: 次へ
+  finish: 完了
+  language:
+    title: 言語を選択
+    description: ウェブサイトから学びたい言語を選択してください
+    targetLanguage: ターゲット言語
+    selectLanguage: 言語を選択
+  apiKey:
+    title: APIキーの設定
+    description: 高度な機能を有効にするには、少なくとも1つのAIプロバイダーを設定してください。後で設定することもできます。
+  translate:
+    title: 翻訳プロバイダーを選択
+    description: お好みの翻訳プロバイダーを選択してください。無料翻訳（Microsoft、Google）はAPIキー不要です。
+    provider: 翻訳プロバイダー
+  read:
+    title: 読解プロバイダーを選択
+    description: 記事の読解と分析に使用するAIプロバイダーを選択してください。
+    provider: 読解プロバイダー

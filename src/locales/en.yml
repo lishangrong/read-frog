@@ -70,6 +70,32 @@ options:
           all: All Content
   translation:
     title: Translation
+  settings:
+    title: Settings
+    export:
+      title: Export Configuration
+      description: Download your current configuration as a JSON file
+      includeAPIKeys: Include API Keys (not recommended for sharing)
+      button: Export
+    import:
+      title: Import Configuration
+      description: Restore configuration from a previously exported file
+      button: Import
+      errorTitle: Import Error
+      confirmTitle: Import Configuration
+      confirmDescription: Choose how to apply the imported configuration
+      overwrite: Overwrite - Replace all current settings
+      merge: Merge - Keep current settings and apply imported changes
+      cancel: Cancel
+      confirm: Import
+    reset:
+      title: Reset Configuration
+      description: Reset all settings to their default values
+      button: Reset to Default
+      confirmTitle: Reset All Settings?
+      confirmDescription: This will reset all settings including API keys, provider selections, and preferences to their default values. This action cannot be undone.
+      cancel: Cancel
+      confirm: Reset
 side:
   sourceLang: Source Language
   targetLang: Target Language
@@ -94,3 +120,25 @@ noConfig:
     firstOnThe: first on the
     optionsPage: options
     page: page
+onboarding:
+  stepProgress: "Step $1 of $2"
+  skip: Skip Setup
+  prev: Previous
+  next: Next
+  finish: Finish
+  language:
+    title: Choose Your Language
+    description: Select the language you want to learn from websites
+    targetLanguage: Target Language
+    selectLanguage: Select a language
+  apiKey:
+    title: Set Up API Keys
+    description: Configure at least one AI provider to enable advanced features. You can skip this and set up later.
+  translate:
+    title: Choose Translation Provider
+    description: Select your preferred translation provider. Free translators (Microsoft, Google) work without API keys.
+    provider: Translation Provider
+  read:
+    title: Choose Reading Provider
+    description: Select your preferred AI provider for article reading and analysis.
+    provider: Reading Provider

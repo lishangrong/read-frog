@@ -16,11 +16,9 @@ export default defineBackground(() => {
     }
     await initializeConfig()
     await loadAPIKeyFromEnv()
-    // Open tutorial page when extension is installed
+    // Open options page for onboarding when extension is installed
     if (details.reason === 'install') {
-      await browser.tabs.create({
-        url: 'https://readfrog.app/guide/step-1',
-      })
+      await browser.runtime.openOptionsPage()
     }
   })
 
