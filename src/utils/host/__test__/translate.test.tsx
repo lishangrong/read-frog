@@ -40,8 +40,10 @@ describe('translateNode', () => {
     )
     const node = screen.getByTestId('test-node')
     await translateNode(node, false)
-    expect(node.childNodes[1]).toHaveClass(CONTENT_WRAPPER_CLASS)
-    expect(node.childNodes[1].childNodes[1]).toHaveClass(BLOCK_CONTENT_CLASS)
+    // Original content is now wrapped inside the wrapper (childNodes[0] = wrapper)
+    expect(node.childNodes[0]).toHaveClass(CONTENT_WRAPPER_CLASS)
+    // wrapper: [originalWrapper, br, translatedNode]
+    expect(node.childNodes[0].childNodes[2]).toHaveClass(BLOCK_CONTENT_CLASS)
   })
 
   it('should insert wrapper after text node', async () => {
@@ -54,8 +56,10 @@ describe('translateNode', () => {
     const node = screen.getByTestId('test-node')
     const textNode = node.firstChild as Text
     await translateNode(textNode, false)
-    expect(node.childNodes[1]).toHaveClass(CONTENT_WRAPPER_CLASS)
-    expect(node.childNodes[1].childNodes[1]).toHaveClass(INLINE_CONTENT_CLASS)
+    // Wrapper replaces text node position (text moved inside wrapper)
+    expect(node.childNodes[0]).toHaveClass(CONTENT_WRAPPER_CLASS)
+    // wrapper: [originalWrapper, space, translatedNode]
+    expect(node.childNodes[0].childNodes[2]).toHaveClass(INLINE_CONTENT_CLASS)
   })
 })
 
@@ -71,8 +75,8 @@ describe('toggle translateWalkedElement', () => {
     const node = screen.getByTestId('test-node')
     await hideOrShowPageTranslation(true)
 
-    expect(node.childNodes[1]).toHaveClass(CONTENT_WRAPPER_CLASS)
-    expect(node.childNodes[1].childNodes[1]).toHaveClass(BLOCK_CONTENT_CLASS)
+    expect(node.childNodes[0]).toHaveClass(CONTENT_WRAPPER_CLASS)
+    expect(node.childNodes[0].childNodes[2]).toHaveClass(BLOCK_CONTENT_CLASS)
 
     await hideOrShowPageTranslation(true)
     expect(node.childNodes.length).toBe(1)
@@ -88,8 +92,8 @@ describe('toggle translateWalkedElement', () => {
     )
     const node = screen.getByTestId('test-node')
     await hideOrShowPageTranslation(true)
-    expect(node.childNodes[1]).toHaveClass(CONTENT_WRAPPER_CLASS)
-    expect(node.childNodes[1].childNodes[1]).toHaveClass(INLINE_CONTENT_CLASS)
+    expect(node.childNodes[0]).toHaveClass(CONTENT_WRAPPER_CLASS)
+    expect(node.childNodes[0].childNodes[2]).toHaveClass(INLINE_CONTENT_CLASS)
 
     await hideOrShowPageTranslation(true)
     expect(node.childNodes.length).toBe(1)
@@ -105,8 +109,8 @@ describe('toggle translateWalkedElement', () => {
     )
     const node = screen.getByTestId('test-node')
     await hideOrShowPageTranslation(true)
-    expect(node.childNodes[1]).toHaveClass(CONTENT_WRAPPER_CLASS)
-    expect(node.childNodes[1].childNodes[1]).toHaveClass(INLINE_CONTENT_CLASS)
+    expect(node.childNodes[0]).toHaveClass(CONTENT_WRAPPER_CLASS)
+    expect(node.childNodes[0].childNodes[2]).toHaveClass(INLINE_CONTENT_CLASS)
 
     await hideOrShowPageTranslation(true)
     expect(node.childNodes.length).toBe(2)
@@ -123,8 +127,8 @@ describe('toggle translateWalkedElement', () => {
     )
     const node = screen.getByTestId('test-node')
     await hideOrShowPageTranslation(true)
-    expect(node.childNodes[2]).toHaveClass(CONTENT_WRAPPER_CLASS)
-    expect(node.childNodes[2].childNodes[1]).toHaveClass(INLINE_CONTENT_CLASS)
+    expect(node.childNodes[0]).toHaveClass(CONTENT_WRAPPER_CLASS)
+    expect(node.childNodes[0].childNodes[2]).toHaveClass(INLINE_CONTENT_CLASS)
 
     await hideOrShowPageTranslation(true)
     expect(node.childNodes.length).toBe(3)
@@ -138,8 +142,8 @@ describe('translatePage', () => {
 
     await hideOrShowPageTranslation()
     const node = screen.getByTestId('test-node')
-    expect(node.childNodes[1]).toHaveClass(CONTENT_WRAPPER_CLASS)
-    expect(node.childNodes[1].childNodes[1]).toHaveClass(BLOCK_CONTENT_CLASS)
+    expect(node.childNodes[0]).toHaveClass(CONTENT_WRAPPER_CLASS)
+    expect(node.childNodes[0].childNodes[2]).toHaveClass(BLOCK_CONTENT_CLASS)
   })
 
   it('should insert inline translation and block translation correctly in a node with inline and block node inside', async () => {
@@ -160,27 +164,30 @@ describe('translatePage', () => {
 
     const firstSpanChild = node.firstChild
     expect(firstSpanChild).toHaveAttribute('data-read-frog-paragraph')
-    expect(firstSpanChild?.childNodes[1]).toHaveClass(CONTENT_WRAPPER_CLASS)
-    expect(firstSpanChild?.childNodes[1].childNodes[1]).toHaveClass(
+    // Original content moved inside wrapper; wrapper: [originalWrapper, space, translatedNode]
+    expect(firstSpanChild?.childNodes[0]).toHaveClass(CONTENT_WRAPPER_CLASS)
+    expect(firstSpanChild?.childNodes[0].childNodes[2]).toHaveClass(
       INLINE_CONTENT_CLASS,
     )
 
     const thirdDivChild = node.childNodes[1]
     expect(thirdDivChild).toHaveAttribute('data-read-frog-paragraph')
-    expect(thirdDivChild?.childNodes[1]).toHaveClass(CONTENT_WRAPPER_CLASS)
-    expect(thirdDivChild?.childNodes[1].childNodes[1]).toHaveClass(
+    expect(thirdDivChild?.childNodes[0]).toHaveClass(CONTENT_WRAPPER_CLASS)
+    expect(thirdDivChild?.childNodes[0].childNodes[2]).toHaveClass(
       BLOCK_CONTENT_CLASS,
     )
 
-    const sixthInlineTranslationChild = node.childNodes[4]
+    // Consecutive inline nodes "3", "4" → wrapper replaces them
+    const sixthInlineTranslationChild = node.childNodes[2]
     expect(sixthInlineTranslationChild).toHaveClass(CONTENT_WRAPPER_CLASS)
-    expect(sixthInlineTranslationChild?.childNodes[1]).toHaveClass(
+    expect(sixthInlineTranslationChild?.childNodes[2]).toHaveClass(
       INLINE_CONTENT_CLASS,
     )
 
+    // Consecutive inline nodes "6", br, "7" → wrapper replaces them
     const lastInlineTranslationChild = node.lastChild
     expect(lastInlineTranslationChild).toHaveClass(CONTENT_WRAPPER_CLASS)
-    expect(lastInlineTranslationChild?.childNodes[1]).toHaveClass(
+    expect(lastInlineTranslationChild?.childNodes[2]).toHaveClass(
       INLINE_CONTENT_CLASS,
     )
   })
@@ -197,8 +204,8 @@ describe('translatePage', () => {
     await hideOrShowPageTranslation()
 
     const targetNode = node.firstChild?.firstChild
-    expect(targetNode?.childNodes[1]).toHaveClass(CONTENT_WRAPPER_CLASS)
-    expect(targetNode?.childNodes[1].childNodes[1]).toHaveClass(
+    expect(targetNode?.childNodes[0]).toHaveClass(CONTENT_WRAPPER_CLASS)
+    expect(targetNode?.childNodes[0].childNodes[2]).toHaveClass(
       INLINE_CONTENT_CLASS,
     )
   })
@@ -213,8 +220,8 @@ describe('translatePage', () => {
     const node = screen.getByTestId('test-node')
     await hideOrShowPageTranslation()
     const targetNode = node.firstChild?.firstChild
-    expect(targetNode?.childNodes[1]).toHaveClass(CONTENT_WRAPPER_CLASS)
-    expect(targetNode?.childNodes[1].childNodes[1]).toHaveClass(
+    expect(targetNode?.childNodes[0]).toHaveClass(CONTENT_WRAPPER_CLASS)
+    expect(targetNode?.childNodes[0].childNodes[2]).toHaveClass(
       BLOCK_CONTENT_CLASS,
     )
   })

@@ -3,7 +3,10 @@ import { globalConfig } from '@/utils/config/config'
 import {
   BLOCK_ATTRIBUTE,
   CONSECUTIVE_INLINE_END_ATTRIBUTE,
+  CONTENT_WRAPPER_CLASS,
   INLINE_ATTRIBUTE,
+  NOTRANSLATE_CLASS,
+  ORIGINAL_CONTENT_CLASS,
   PARAGRAPH_ATTRIBUTE,
   WALKED_ATTRIBUTE,
 } from '@/utils/constants/dom-labels'
@@ -207,6 +210,7 @@ export async function translateWalkedElement(
   element: HTMLElement,
   walkId: string,
   toggle: boolean = false,
+  priority?: number,
 ) {
   const promises: Promise<void>[] = []
 
@@ -225,7 +229,7 @@ export async function translateWalkedElement(
     }
 
     if (!hasBlockNodeChild) {
-      promises.push(translateNode(element, toggle))
+      promises.push(translateNode(element, toggle, priority))
     }
     else {
       // prevent children change during iteration
@@ -244,17 +248,39 @@ export async function translateWalkedElement(
           continue
         }
         else if (consecutiveInlineNodes.length) {
-          promises.push(dealWithConsecutiveInlineNodes(consecutiveInlineNodes, toggle))
+          promises.push(dealWithConsecutiveInlineNodes(consecutiveInlineNodes, toggle, priority))
           consecutiveInlineNodes = []
         }
 
+        // Handle existing translation wrappers (from previous translate pass)
+        if (
+          isHTMLElement(child)
+          && child.classList.contains(NOTRANSLATE_CLASS)
+          && child.classList.contains(CONTENT_WRAPPER_CLASS)
+        ) {
+          if (toggle) {
+            // Restore original content and remove wrapper
+            const originalSpan = child.querySelector(`.${ORIGINAL_CONTENT_CLASS}`)
+            if (originalSpan) {
+              const parent = child.parentNode
+              if (parent) {
+                while (originalSpan.firstChild) {
+                  parent.insertBefore(originalSpan.firstChild, child)
+                }
+              }
+            }
+            child.remove()
+          }
+          continue
+        }
+
         if (isHTMLElement(child)) {
-          promises.push(translateWalkedElement(child, walkId, toggle))
+          promises.push(translateWalkedElement(child, walkId, toggle, priority))
         }
       }
 
       if (consecutiveInlineNodes.length) {
-        promises.push(dealWithConsecutiveInlineNodes(consecutiveInlineNodes, toggle))
+        promises.push(dealWithConsecutiveInlineNodes(consecutiveInlineNodes, toggle, priority))
         consecutiveInlineNodes = []
       }
     }
@@ -263,13 +289,13 @@ export async function translateWalkedElement(
     const promises: Promise<void>[] = []
     for (const child of element.childNodes) {
       if (isHTMLElement(child)) {
-        promises.push(translateWalkedElement(child, walkId, toggle))
+        promises.push(translateWalkedElement(child, walkId, toggle, priority))
       }
     }
     if (element.shadowRoot) {
       for (const child of element.shadowRoot.children) {
         if (isHTMLElement(child)) {
-          promises.push(translateWalkedElement(child, walkId, toggle))
+          promises.push(translateWalkedElement(child, walkId, toggle, priority))
         }
       }
     }
@@ -300,17 +326,17 @@ export function unwrapDeepestOnlyHTMLChild(element: HTMLElement) {
   return currentElement
 }
 
-async function dealWithConsecutiveInlineNodes(nodes: TransNode[], toggle: boolean = false) {
+async function dealWithConsecutiveInlineNodes(nodes: TransNode[], toggle: boolean = false, priority?: number) {
   if (nodes.length > 1) {
     // give attribute to the last node
     const lastNode = nodes[nodes.length - 1]
     if (isHTMLElement(lastNode)) {
       lastNode.setAttribute(CONSECUTIVE_INLINE_END_ATTRIBUTE, '')
     }
-    await translateConsecutiveInlineNodes(nodes, toggle)
+    await translateConsecutiveInlineNodes(nodes, toggle, priority)
   }
   else if (nodes.length === 1) {
-    await translateNode(nodes[0], toggle)
+    await translateNode(nodes[0], toggle, priority)
   }
 }
 

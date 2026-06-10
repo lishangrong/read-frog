@@ -50,3 +50,26 @@
   font-family: inherit;
   text-decoration: inherit;
 }
+
+/* ── Display Mode: Original content wrapper ── */
+.read-frog-original-content {
+  /* inherits display from context by default (bilingual mode) */
+}
+
+/* translationOnly mode: hide original text */
+[data-read-frog-display-mode="translationOnly"] > .read-frog-original-content {
+  display: none !important;
+}
+
+/* originalHidden mode: CSS-hidden, revealed on hover */
+[data-read-frog-display-mode="originalHidden"] > .read-frog-original-content {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease, max-height 0.3s ease;
+}
+
+[data-read-frog-display-mode="originalHidden"]:hover > .read-frog-original-content {
+  opacity: 1;
+  max-height: 500px;
+}

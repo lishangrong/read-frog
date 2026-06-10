@@ -2,6 +2,7 @@ import { isDontWalkIntoElement, isHTMLElement, isIFrameElement } from '@/utils/h
 import { deepQueryTopLevelSelector, translateWalkedElement, walkAndLabelElement } from '@/utils/host/dom/traversal'
 import { removeAllTranslatedWrapperNodes } from '@/utils/host/translate/node-manipulation'
 import { sendMessage } from '@/utils/message'
+import { TranslationPriority } from '@/utils/request/translation-priority'
 
 // export function registerPageTranslationTriggers() {
 //   // Four-finger touch gesture to trigger translatePage
@@ -112,7 +113,10 @@ export class PageTranslationManager {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           if (isHTMLElement(entry.target)) {
-            translateWalkedElement(entry.target, this.id!)
+            const priority = entry.intersectionRatio > 0.1
+              ? TranslationPriority.VISIBLE_AUTO
+              : TranslationPriority.PRELOAD_AUTO
+            translateWalkedElement(entry.target, this.id!, false, priority)
           }
           observer.unobserve(entry.target)
         }

@@ -45,6 +45,9 @@ export function setUpRequestQueue() {
       case 'aiTranslate':
         thunk = () => aiTranslate(data.params.provider, data.params.modelString, data.params.prompt)
         break
+      case 'selectionTranslate':
+        thunk = () => aiTranslate(data.params.provider, data.params.modelString, data.params.prompt)
+        break
       case 'batchAiTranslate': {
         const manager = getBatchManager(data.params.provider, data.params.modelString, data.params.targetLang)
         return manager.enqueue(data.params.text)
@@ -53,6 +56,6 @@ export function setUpRequestQueue() {
         throw new Error(`Unknown request type: ${data.type}`)
     }
 
-    return requestQueue.enqueue(thunk, data.scheduleAt, data.hash)
+    return requestQueue.enqueue(thunk, data.scheduleAt, data.hash, data.priority)
   })
 }

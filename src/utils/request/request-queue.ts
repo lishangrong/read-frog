@@ -9,6 +9,7 @@ export interface RequestTask {
   scheduleAt: number
   createdAt: number
   retryCount: number
+  priority: number
 }
 
 export interface QueueOptions {
@@ -36,7 +37,7 @@ export class RequestQueue {
     this.waitingQueue = new BinaryHeapPQ<RequestTask & { hash: string }>()
   }
 
-  enqueue<T>(thunk: () => Promise<T>, scheduleAt: number, hash: string): Promise<T> {
+  enqueue<T>(thunk: () => Promise<T>, scheduleAt: number, hash: string, priority: number = 1): Promise<T> {
     const duplicateTask = this.duplicateTask(hash)
     if (duplicateTask) {
       // console.info(`🔄 Found duplicate task for hash: ${hash}, returning existing promise`)
@@ -59,10 +60,11 @@ export class RequestQueue {
       scheduleAt,
       createdAt: Date.now(),
       retryCount: 0,
+      priority,
     }
 
     this.waitingTasks.set(hash, task)
-    this.waitingQueue.push({ ...task, hash }, scheduleAt)
+    this.waitingQueue.push({ ...task, hash }, priority * 1e15 + scheduleAt)
 
     // console.info(`✅ Task ${task.id} added to queue. Queue size: ${this.waitingQueue.size()}, waiting: ${this.waitingTasks.size}, executing: ${this.executingTasks.size}`)
 
@@ -165,7 +167,7 @@ export class RequestQueue {
 
         // Move task back to waiting queue for retry
         this.waitingTasks.set(task.hash, task)
-        this.waitingQueue.push(task, retryAt)
+        this.waitingQueue.push(task, task.priority * 1e15 + retryAt)
         this.schedule()
       }
       else {

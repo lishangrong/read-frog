@@ -15,6 +15,7 @@ export interface BatchRequestOptions {
 
 interface PendingItem {
   text: string
+  priority: number
   resolve: (result: string) => void
   reject: (error: Error) => void
 }
@@ -30,9 +31,9 @@ export class BatchRequestManager {
     private readonly executeBatch: (texts: string[]) => Promise<string[]>,
   ) {}
 
-  enqueue(text: string): Promise<string> {
+  enqueue(text: string, priority: number = 1): Promise<string> {
     return new Promise<string>((resolve, reject) => {
-      this.pendingItems.push({ text, resolve, reject })
+      this.pendingItems.push({ text, priority, resolve, reject })
 
       if (this.pendingItems.length >= this.options.maxBatchSize) {
         this.flush()
@@ -50,6 +51,9 @@ export class BatchRequestManager {
     }
 
     if (this.pendingItems.length === 0) return
+
+    // Sort by priority (lower number = higher priority) before batching
+    this.pendingItems.sort((a, b) => a.priority - b.priority)
 
     const batch = this.pendingItems.splice(0, this.options.maxBatchSize)
     this.processBatch(batch)
@@ -78,13 +82,8 @@ export class BatchRequestManager {
       const results = await this.executeBatch(texts)
 
       if (results.length !== batch.length) {
-        // Fallback: if count doesn't match, reject all
-        const error = new Error(
-          `Batch response count mismatch: expected ${batch.length}, got ${results.length}`,
-        )
-        for (const item of batch) {
-          item.reject(error)
-        }
+        // Fallback: retry as individual requests instead of rejecting all
+        await this.fallbackToIndividual(batch)
         return
       }
 
@@ -102,6 +101,19 @@ export class BatchRequestManager {
 
   get pendingCount(): number {
     return this.pendingItems.length
+  }
+
+  private async fallbackToIndividual(batch: PendingItem[]): Promise<void> {
+    const promises = batch.map(async (item) => {
+      try {
+        const results = await this.executeBatch([item.text])
+        item.resolve(results[0])
+      }
+      catch (error) {
+        item.reject(error instanceof Error ? error : new Error(String(error)))
+      }
+    })
+    await Promise.all(promises)
   }
 
   dispose(): void {

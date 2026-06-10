@@ -15,7 +15,7 @@ interface ProtocolMap {
   getPinState: () => boolean
   returnPinState: (data: { isPinned: boolean }) => void
   // request
-  enqueueRequest: (data: { type: 'googleTranslate' | 'microsoftTranslate' | 'aiTranslate' | 'batchAiTranslate', params: Record<string, any>, scheduleAt: number, hash: string }) => Promise<any>
+  enqueueRequest: (data: { type: 'googleTranslate' | 'microsoftTranslate' | 'aiTranslate' | 'batchAiTranslate' | 'selectionTranslate', params: Record<string, any>, scheduleAt: number, hash: string, priority?: number }) => Promise<any>
 }
 
 export const { sendMessage, onMessage }

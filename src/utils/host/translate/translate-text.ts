@@ -3,14 +3,21 @@ import { isPureTranslateProvider } from '@/types/config/provider'
 import { globalConfig } from '../../config/config'
 import { Sha256Hex } from '../../hash'
 import { sendMessage } from '../../message'
-import { getTranslateLinePrompt } from '../../prompts/translate-line'
+import { getTranslateLinePrompt, getTranslateLinePromptWithContext } from '../../prompts/translate-line'
 
-export async function translateText(sourceText: string) {
+export interface TranslateTextOptions {
+  context?: string
+  priority?: number
+  hasPlaceholders?: boolean
+}
+
+export async function translateText(sourceText: string, options: TranslateTextOptions = {}) {
   if (!globalConfig) {
     throw new Error('No global config when translate text')
   }
   const provider = globalConfig.translate.provider
   const modelString = globalConfig.translate.models[provider]?.model
+  const { context, priority, hasPlaceholders } = options
 
   // replace /\u200B/g is for Feishu, it's a zero-width space
   const cleanSourceText = sourceText.replace(/\u200B/g, '').trim()
@@ -28,6 +35,7 @@ export async function translateText(sourceText: string) {
       params: { text: cleanSourceText, fromLang: sourceLang, toLang: targetLang },
       scheduleAt: Date.now(),
       hash: Sha256Hex(cleanSourceText, provider, sourceLang, targetLang),
+      priority,
     })
   }
   else if (modelString) {
@@ -35,7 +43,9 @@ export async function translateText(sourceText: string) {
     if (!targetLang) {
       throw new Error('Invalid target language code')
     }
-    const prompt = getTranslateLinePrompt(targetLang, cleanSourceText)
+    const prompt = context && globalConfig.translate.page.contextAware
+      ? getTranslateLinePromptWithContext(targetLang, cleanSourceText, context, undefined, hasPlaceholders)
+      : getTranslateLinePrompt(targetLang, cleanSourceText, hasPlaceholders)
     const text = await sendMessage('enqueueRequest', {
       type: 'aiTranslate',
       params: {
@@ -45,6 +55,7 @@ export async function translateText(sourceText: string) {
       },
       scheduleAt: Date.now(),
       hash: Sha256Hex(cleanSourceText, provider, modelString, targetLang),
+      priority,
     })
     // Some deep thinking models, such as deepseek, return the thinking process. Therefore,
     // the thinking process in the <think></think> tag needs to be filtered out and only the result is returned

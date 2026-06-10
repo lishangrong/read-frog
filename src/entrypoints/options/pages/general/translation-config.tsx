@@ -1,4 +1,4 @@
-import type { PageTranslateRange, TranslateProviderNames } from '@/types/config/provider'
+import type { DisplayMode, PageTranslateRange, TranslateProviderNames } from '@/types/config/provider'
 import deepmerge from 'deepmerge'
 
 import { useAtom, useAtomValue } from 'jotai'
@@ -14,9 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { isLLMTranslateProvider, pageTranslateRangeSchema, translateProviderModels } from '@/types/config/provider'
+import { displayModeSchema, isLLMTranslateProvider, pageTranslateRangeSchema, translateProviderModels } from '@/types/config/provider'
 import { configFields } from '@/utils/atoms/config'
-import { LLM_TRANSLATE_PROVIDER_ITEMS, PURE_TRANSLATE_PROVIDER_ITEMS } from '@/utils/constants/config'
+import { DISPLAY_MODE_ITEMS, LLM_TRANSLATE_PROVIDER_ITEMS, PURE_TRANSLATE_PROVIDER_ITEMS } from '@/utils/constants/config'
 import { ConfigCard } from '../../components/config-card'
 import { FieldWithLabel } from '../../components/field-with-label'
 import { SetApiKeyWarning } from '../../components/set-api-key-warning'
@@ -28,6 +28,7 @@ export default function TranslationConfig() {
         <TranslateProviderSelector />
         <TranslateModelSelector />
         <RangeSelector />
+        <DisplayModeSelector />
       </div>
     </ConfigCard>
   )
@@ -207,6 +208,38 @@ function TranslateModelSelector() {
           {i18n.t('options.general.translationConfig.model.enterCustomModel')}
         </label>
       </div>
+    </FieldWithLabel>
+  )
+}
+
+function DisplayModeSelector() {
+  const [translateConfig, setTranslateConfig] = useAtom(configFields.translate)
+  return (
+    <FieldWithLabel id="displayMode" label={i18n.t('options.general.translationConfig.displayMode.title')}>
+      <Select
+        value={translateConfig.page.displayMode}
+        onValueChange={(value: DisplayMode) =>
+          setTranslateConfig(
+            deepmerge(translateConfig, { page: { displayMode: value } }),
+          )}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue asChild>
+            <span>
+              {DISPLAY_MODE_ITEMS[translateConfig.page.displayMode]?.label}
+            </span>
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {displayModeSchema.options.map(mode => (
+              <SelectItem key={mode} value={mode}>
+                {DISPLAY_MODE_ITEMS[mode]?.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
     </FieldWithLabel>
   )
 }

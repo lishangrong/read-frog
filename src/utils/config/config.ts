@@ -55,7 +55,14 @@ export async function initializeConfig() {
 
 storage.watch<Config>(`local:${CONFIG_STORAGE_KEY}`, (newConfig) => {
   if (configSchema.safeParse(newConfig).success) {
+    const oldDisplayMode = globalConfig?.translate.page.displayMode
     globalConfig = newConfig
+    // Apply display mode change dynamically if in content script context
+    if (oldDisplayMode !== newConfig?.translate.page.displayMode && typeof document !== 'undefined') {
+      import('../host/translate/display-mode').then(({ applyDisplayMode }) => {
+        applyDisplayMode(newConfig!.translate.page.displayMode)
+      })
+    }
   }
 })
 

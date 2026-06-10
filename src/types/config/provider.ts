@@ -178,6 +178,9 @@ export type TranslateModels = z.infer<typeof translateModelsSchema>
 export const pageTranslateRangeSchema = z.enum(['main', 'all'])
 export type PageTranslateRange = z.infer<typeof pageTranslateRangeSchema>
 
+export const displayModeSchema = z.enum(['bilingual', 'translationOnly', 'originalHidden'])
+export type DisplayMode = z.infer<typeof displayModeSchema>
+
 export const translateConfigSchema = z.object({
   provider: z.enum(translateProviderNames),
   models: translateModelsSchema,
@@ -188,6 +191,8 @@ export const translateConfigSchema = z.object({
   page: z.object({
     range: pageTranslateRangeSchema,
     autoTranslatePatterns: z.array(z.string()),
+    displayMode: displayModeSchema,
+    contextAware: z.boolean(),
   }),
 })
 export type TranslateConfig = z.infer<typeof translateConfigSchema>

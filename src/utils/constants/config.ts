@@ -1,5 +1,5 @@
 import type { Config } from '@/types/config/config'
-import type { AllProviderNames, PageTranslateRange, ProvidersConfig, ReadModels, TranslateModels } from '@/types/config/provider'
+import type { AllProviderNames, DisplayMode, PageTranslateRange, ProvidersConfig, ReadModels, TranslateModels } from '@/types/config/provider'
 import baichuanLogo from '@/assets/provider/baichuan.png'
 import claudeLogo from '@/assets/provider/claude.png'
 import deepseekLogo from '@/assets/provider/deepseek.png'
@@ -24,7 +24,7 @@ import { apiProviderNames, pureTranslateProvider, readProviderNames, translatePr
 import { omit, pick } from '@/types/utils'
 
 export const CONFIG_STORAGE_KEY = 'config'
-export const CONFIG_SCHEMA_VERSION = 8
+export const CONFIG_SCHEMA_VERSION = 9
 
 export const MIN_SIDE_CONTENT_WIDTH = 400 // px
 export const DEFAULT_SIDE_CONTENT_WIDTH = 400 // px
@@ -304,6 +304,8 @@ export const DEFAULT_CONFIG: Config = {
     page: {
       range: 'main',
       autoTranslatePatterns: ['news.ycombinator.com'],
+      displayMode: 'bilingual',
+      contextAware: true,
     },
   },
   floatingButton: {
@@ -430,4 +432,13 @@ export const PAGE_TRANSLATE_RANGE_ITEMS: Record<
 > = {
   main: { label: 'Main' },
   all: { label: 'All' },
+}
+
+export const DISPLAY_MODE_ITEMS: Record<
+  DisplayMode,
+  { label: string }
+> = {
+  bilingual: { label: 'Bilingual' },
+  translationOnly: { label: 'Translation Only' },
+  originalHidden: { label: 'Original Hidden' },
 }

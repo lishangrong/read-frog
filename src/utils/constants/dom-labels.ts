@@ -19,3 +19,7 @@ export const NOTRANSLATE_CLASS = 'notranslate'
 export const REACT_SHADOW_HOST_CLASS = 'read-frog-react-shadow-host'
 
 export const TRANSLATION_ERROR_CONTAINER_CLASS = 'read-frog-translation-error-container'
+
+export const DISPLAY_MODE_ATTRIBUTE = 'data-read-frog-display-mode'
+export const ORIGINAL_CONTENT_CLASS = 'read-frog-original-content'
+export const ORIGINAL_HIDDEN_CLASS = 'read-frog-original-hidden'
