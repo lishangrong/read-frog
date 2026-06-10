@@ -11,6 +11,7 @@ import LanguageOptionsSelector from './components/language-options-selector'
 import QuickLinks from './components/quick-links'
 import ReadButton from './components/read-button'
 import ReadProviderSelector from './components/read-provider-selector'
+import RenderingModeSelector from './components/rendering-mode-selector'
 import TranslateButton from './components/translate-button'
 import TranslateProviderSelector from './components/translate-provider-selector'
 
@@ -25,6 +26,7 @@ function App() {
       <div className="bg-background flex flex-col gap-4 px-6 pt-5 pb-4">
         <LanguageOptionsSelector />
         <LanguageLevelSelector />
+        <RenderingModeSelector />
         <ReadProviderSelector />
         <TranslateProviderSelector />
         <div className="grid w-full grid-cols-2 gap-2">

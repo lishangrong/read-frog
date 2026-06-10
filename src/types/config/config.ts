@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import { langCodeISO6393Schema, langLevel } from '@/types/config/languages'
 import { MIN_SIDE_CONTENT_WIDTH } from '@/utils/constants/side'
+import { renderingModeSchema } from './rendering'
 import { providersConfigSchema, readConfigSchema, translateConfigSchema } from './provider'
 
 // Language schema
@@ -22,6 +23,11 @@ const sideContentSchema = z.object({
   width: z.number().min(MIN_SIDE_CONTENT_WIDTH),
 })
 
+// Rendering schema
+const renderingSchema = z.object({
+  mode: renderingModeSchema,
+})
+
 // Complete config schema
 export const configSchema = z.object({
   language: languageSchema,
@@ -30,6 +36,7 @@ export const configSchema = z.object({
   translate: translateConfigSchema,
   floatingButton: floatingButtonSchema,
   sideContent: sideContentSchema,
+  rendering: renderingSchema,
 })
 
 export type Config = z.infer<typeof configSchema>

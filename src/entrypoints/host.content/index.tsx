@@ -3,6 +3,7 @@ import { globalConfig, loadGlobalConfigPromise } from '@/utils/config/config'
 import { shouldAutoEnable } from '@/utils/host/translate/auto-translation'
 import { registerTranslationTriggers } from './translation-trigger'
 import { PageTranslationManager } from './translation-trigger/page-translation'
+import { SelectionManager } from './selection/selection-manager'
 import './listen'
 import './style.css'
 
@@ -19,6 +20,10 @@ export default defineContentScript({
       rootMargin: '1000px',
       threshold: 0.1,
     })
+
+    // Initialize selection translation manager
+    const selectionManager = new SelectionManager()
+    selectionManager.init()
 
     const handleUrlChange = (from: string, to: string) => {
       if (from !== to) {

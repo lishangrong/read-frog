@@ -172,6 +172,9 @@ export const DEFAULT_CONFIG: Config = {
   sideContent: {
     width: DEFAULT_SIDE_CONTENT_WIDTH,
   },
+  rendering: {
+    mode: 'bilingual',
+  },
 }
 
 export const PROVIDER_ITEMS: Record<AllProviderNames, { logo: string, name: string }>

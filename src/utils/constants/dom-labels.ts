@@ -19,3 +19,14 @@ export const NOTRANSLATE_CLASS = 'notranslate'
 export const REACT_SHADOW_HOST_CLASS = 'read-frog-react-shadow-host'
 
 export const TRANSLATION_ERROR_CONTAINER_CLASS = 'read-frog-translation-error-container'
+
+// Rendering mode attributes
+export const RENDER_MODE_ATTRIBUTE = 'data-rf-render-mode'
+export const ORIGINAL_TEXT_ATTRIBUTE = 'data-rf-original'
+export const TRANSLATED_TEXT_ATTRIBUTE = 'data-rf-translated'
+
+// Rendering mode CSS classes
+export const BILINGUAL_WRAPPER_CLASS = 'read-frog-bilingual-wrapper'
+export const ORIGINAL_TEXT_CLASS = 'read-frog-original-text'
+export const TRANSLATED_TEXT_CLASS = 'read-frog-translated-text'
+export const ORIGINAL_HIDDEN_CLASS = 'read-frog-original-hidden'

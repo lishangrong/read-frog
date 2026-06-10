@@ -1,5 +1,27 @@
 import { BinaryHeapPQ } from './priority-queue'
 
+/**
+ * Priority levels for translation requests.
+ * Lower values = higher priority (dequeued first).
+ */
+export enum TranslationPriority {
+  /** Hover/popup translation — immediate UI feedback */
+  CRITICAL = 0,
+  /** User-initiated selection translation */
+  HIGH = 100,
+  /** Page translation for visible viewport elements */
+  NORMAL = 500,
+  /** Background pre-loading of off-screen translations */
+  LOW = 1000,
+}
+
+export interface EnqueueOptions {
+  /** Override the default priority. Adjusts effective scheduleAt. */
+  priority?: number
+  /** AbortSignal to cancel the request before it starts executing */
+  signal?: AbortSignal
+}
+
 export interface RequestTask {
   id: string
   thunk: () => Promise<any>
@@ -9,6 +31,8 @@ export interface RequestTask {
   scheduleAt: number
   createdAt: number
   retryCount: number
+  /** Optional abort signal for cancellation */
+  signal?: AbortSignal
 }
 
 export interface QueueOptions {
@@ -36,7 +60,7 @@ export class RequestQueue {
     this.waitingQueue = new BinaryHeapPQ<RequestTask & { hash: string }>()
   }
 
-  enqueue<T>(thunk: () => Promise<T>, scheduleAt: number, hash: string): Promise<T> {
+  enqueue<T>(thunk: () => Promise<T>, scheduleAt: number, hash: string, options?: EnqueueOptions): Promise<T> {
     const duplicateTask = this.duplicateTask(hash)
     if (duplicateTask) {
       // console.info(`🔄 Found duplicate task for hash: ${hash}, returning existing promise`)
@@ -50,19 +74,46 @@ export class RequestQueue {
       reject = rej
     })
 
+    // Apply priority adjustment to scheduleAt
+    let effectiveScheduleAt = scheduleAt
+    if (options?.priority !== undefined) {
+      effectiveScheduleAt = Math.max(0, scheduleAt - (TranslationPriority.NORMAL - options.priority))
+    }
+
     const task: RequestTask = {
       id: crypto.randomUUID(),
       thunk,
       promise,
       resolve,
       reject,
-      scheduleAt,
+      scheduleAt: effectiveScheduleAt,
       createdAt: Date.now(),
       retryCount: 0,
+      signal: options?.signal,
+    }
+
+    // Handle abort signal — cancel task before it starts
+    if (options?.signal) {
+      const onAbort = () => {
+        // Only cancel if still waiting (not yet executing)
+        if (this.waitingTasks.has(hash)) {
+          this.waitingTasks.delete(hash)
+          // Note: BinaryHeapPQ doesn't support removal, but the task
+          // will be rejected when it reaches the front of the queue
+          reject(new Error('Task cancelled via AbortSignal'))
+        }
+      }
+
+      if (options.signal.aborted) {
+        reject(new Error('Task cancelled via AbortSignal'))
+        return promise
+      }
+
+      options.signal.addEventListener('abort', onAbort, { once: true })
     }
 
     this.waitingTasks.set(hash, task)
-    this.waitingQueue.push({ ...task, hash }, scheduleAt)
+    this.waitingQueue.push({ ...task, hash }, effectiveScheduleAt)
 
     // console.info(`✅ Task ${task.id} added to queue. Queue size: ${this.waitingQueue.size()}, waiting: ${this.waitingTasks.size}, executing: ${this.executingTasks.size}`)
 
@@ -109,6 +160,14 @@ export class RequestQueue {
   }
 
   private async executeTask(task: RequestTask & { hash: string }) {
+    // Check if task was cancelled via AbortSignal before executing
+    if (task.signal?.aborted) {
+      task.reject(new Error('Task cancelled via AbortSignal'))
+      this.executingTasks.delete(task.hash)
+      this.schedule()
+      return
+    }
+
     // console.info(`🏃 Starting execution of task ${task.id} (attempt ${task.retryCount + 1}) at ${Date.now()}`)
 
     let timeoutId: NodeJS.Timeout | null = null

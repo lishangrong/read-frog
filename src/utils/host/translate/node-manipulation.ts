@@ -1,3 +1,4 @@
+import type { RenderingMode } from '@/types/config/rendering'
 import type { Point, TransNode } from '@/types/dom'
 import React from 'react'
 import textSmallCSS from '@/assets/tailwind/text-small.css?inline'
@@ -11,7 +12,10 @@ import {
   CONTENT_WRAPPER_CLASS,
   INLINE_CONTENT_CLASS,
   NOTRANSLATE_CLASS,
+  ORIGINAL_TEXT_ATTRIBUTE,
   REACT_SHADOW_HOST_CLASS,
+  RENDER_MODE_ATTRIBUTE,
+  TRANSLATED_TEXT_ATTRIBUTE,
   TRANSLATION_ERROR_CONTAINER_CLASS,
 } from '../../constants/dom-labels'
 import { FORCE_INLINE_TRANSLATION_TAGS } from '../../constants/dom-tags'
@@ -26,6 +30,8 @@ import {
   unwrapDeepestOnlyHTMLChild,
   walkAndLabelElement,
 } from '../dom/traversal'
+import type { IRenderStrategy } from './render-strategy'
+import { createRenderStrategy } from './strategies'
 
 import { translateText } from './translate-text'
 
@@ -276,4 +282,330 @@ async function getTranslatedTextAndRemoveSpinner(node: TransNode | TransNode[], 
   }
 
   return translatedText
+}
+
+/**
+ * Translate a single node using a render strategy.
+ * The strategy controls how original and translated text are displayed.
+ */
+export async function translateNodeWithMode(
+  node: TransNode,
+  strategy: IRenderStrategy,
+  toggle: boolean = false,
+): Promise<void> {
+  try {
+    if (translatingNodes.has(node))
+      return
+    translatingNodes.add(node)
+
+    const targetNode
+      = isHTMLElement(node) ? unwrapDeepestOnlyHTMLChild(node) : node
+
+    const existedTranslatedWrapper = findExistedTranslatedWrapper(targetNode)
+    if (existedTranslatedWrapper) {
+      existedTranslatedWrapper.remove()
+      if (toggle) {
+        return
+      }
+    }
+
+    const textContent = extractTextContent(targetNode)
+    if (!textContent)
+      return
+
+    const ownerDoc = getOwnerDocument(targetNode)
+    injectStylesIntoDocument(ownerDoc)
+
+    // Create wrapper with spinner
+    const translatedWrapperNode = ownerDoc.createElement('span')
+    translatedWrapperNode.className = `${NOTRANSLATE_CLASS} ${CONTENT_WRAPPER_CLASS}`
+    const spinner = ownerDoc.createElement('span')
+    spinner.className = 'read-frog-spinner'
+    translatedWrapperNode.appendChild(spinner)
+
+    if (isTextNode(targetNode)) {
+      targetNode.parentNode?.insertBefore(
+        translatedWrapperNode,
+        targetNode.nextSibling,
+      )
+    }
+    else {
+      targetNode.appendChild(translatedWrapperNode)
+    }
+
+    let translatedText: string | undefined
+    try {
+      translatedText = await translateText(textContent)
+    }
+    catch (error) {
+      spinner.remove()
+      const errorComponent = React.createElement(TranslationError, {
+        node,
+        error: error as Error,
+      })
+      const container = createReactShadowHost(
+        errorComponent,
+        {
+          className: TRANSLATION_ERROR_CONTAINER_CLASS,
+          position: 'inline',
+          inheritStyles: false,
+          cssContent: [themeCSS, textSmallCSS],
+          style: { verticalAlign: 'middle' },
+        },
+      )
+      translatedWrapperNode.appendChild(container)
+      return
+    }
+    finally {
+      if (spinner.parentNode) {
+        spinner.remove()
+      }
+    }
+
+    if (!translatedText)
+      return
+
+    // Use strategy to render the translation
+    const rendered = strategy.renderNode(targetNode, translatedText, textContent, ownerDoc)
+    translatedWrapperNode.replaceWith(rendered)
+  }
+  finally {
+    translatingNodes.delete(node)
+  }
+}
+
+/**
+ * Translate consecutive inline nodes using a render strategy.
+ */
+export async function translateConsecutiveInlineNodesWithMode(
+  nodes: TransNode[],
+  strategy: IRenderStrategy,
+  toggle: boolean = false,
+): Promise<void> {
+  try {
+    if (nodes.every(node => translatingNodes.has(node))) {
+      return
+    }
+    nodes.forEach(node => translatingNodes.add(node))
+
+    const targetNode = nodes[nodes.length - 1]
+
+    const existedTranslatedWrapper = findExistedTranslatedWrapper(targetNode)
+    if (existedTranslatedWrapper) {
+      existedTranslatedWrapper.remove()
+      if (toggle) {
+        return
+      }
+    }
+
+    const textContent = nodes.map(node => extractTextContent(node)).join(' ')
+    if (!textContent)
+      return
+
+    const ownerDoc = getOwnerDocument(targetNode)
+    injectStylesIntoDocument(ownerDoc)
+
+    const translatedWrapperNode = ownerDoc.createElement('span')
+    translatedWrapperNode.className = `${NOTRANSLATE_CLASS} ${CONTENT_WRAPPER_CLASS}`
+    const spinner = ownerDoc.createElement('span')
+    spinner.className = 'read-frog-spinner'
+    translatedWrapperNode.appendChild(spinner)
+
+    targetNode.parentNode?.insertBefore(
+      translatedWrapperNode,
+      targetNode.nextSibling,
+    )
+
+    let translatedText: string | undefined
+    try {
+      translatedText = await translateText(textContent)
+    }
+    catch (error) {
+      spinner.remove()
+      const errorComponent = React.createElement(TranslationError, {
+        node: nodes,
+        error: error as Error,
+      })
+      const container = createReactShadowHost(
+        errorComponent,
+        {
+          className: TRANSLATION_ERROR_CONTAINER_CLASS,
+          position: 'inline',
+          inheritStyles: false,
+          cssContent: [themeCSS, textSmallCSS],
+          style: { verticalAlign: 'middle' },
+        },
+      )
+      translatedWrapperNode.appendChild(container)
+      return
+    }
+    finally {
+      if (spinner.parentNode) {
+        spinner.remove()
+      }
+    }
+
+    if (!translatedText)
+      return
+
+    const originalText = textContent
+    const rendered = strategy.renderNodeGroup(nodes, translatedText, originalText, ownerDoc)
+    translatedWrapperNode.replaceWith(rendered)
+  }
+  catch (error) {
+    logger.error(error)
+  }
+  finally {
+    nodes.forEach(node => translatingNodes.delete(node))
+  }
+}
+
+/**
+ * Switch the rendering mode for all currently translated nodes on the page.
+ * Re-renders existing translations using the new strategy without re-calling the API.
+ * Uses original and translated text stored in data attributes.
+ */
+export function switchRenderingMode(newMode: RenderingMode): void {
+  const newStrategy = createRenderStrategy(newMode)
+
+  // Find all translated wrapper elements that have render mode info
+  const wrappers = deepQueryTopLevelSelector(
+    document,
+    (el) => isHTMLElement(el) && el.classList.contains(CONTENT_WRAPPER_CLASS)
+      && el.hasAttribute(RENDER_MODE_ATTRIBUTE),
+  )
+
+  wrappers.forEach((wrapper) => {
+    const originalText = wrapper.getAttribute(ORIGINAL_TEXT_ATTRIBUTE)
+    const translatedText = wrapper.getAttribute(TRANSLATED_TEXT_ATTRIBUTE)
+    const parentNode = wrapper.parentNode
+
+    if (!originalText || !translatedText || !parentNode)
+      return
+
+    const ownerDoc = wrapper.ownerDocument || document
+
+    // Determine if this was inline or block based on content classes
+    const hasBlockContent = wrapper.querySelector(`.${BLOCK_CONTENT_CLASS}`) !== null
+
+    // Build new wrapper content based on new mode
+    const newWrapper = ownerDoc.createElement('span')
+    newWrapper.className = `${NOTRANSLATE_CLASS} ${CONTENT_WRAPPER_CLASS}`
+    newWrapper.setAttribute(RENDER_MODE_ATTRIBUTE, newMode)
+    newWrapper.setAttribute(ORIGINAL_TEXT_ATTRIBUTE, originalText)
+    newWrapper.setAttribute(TRANSLATED_TEXT_ATTRIBUTE, translatedText)
+
+    if (hasBlockContent) {
+      appendBlockBilingualContent(newWrapper, ownerDoc, originalText, translatedText, newMode)
+    }
+    else {
+      appendInlineBilingualContent(newWrapper, ownerDoc, originalText, translatedText, newMode)
+    }
+
+    // Swap in-place
+    parentNode.replaceChild(newWrapper, wrapper)
+  })
+}
+
+function appendInlineBilingualContent(
+  wrapper: HTMLElement,
+  ownerDoc: Document,
+  originalText: string,
+  translatedText: string,
+  mode: RenderingMode,
+): void {
+  if (mode === 'bilingual') {
+    const separator = ownerDoc.createElement('span')
+    separator.textContent = '  '
+    wrapper.appendChild(separator)
+
+    const originalSpan = ownerDoc.createElement('span')
+    originalSpan.className = `${NOTRANSLATE_CLASS} read-frog-original-text`
+    originalSpan.textContent = originalText
+    wrapper.appendChild(originalSpan)
+
+    const midSpace = ownerDoc.createElement('span')
+    midSpace.textContent = ' '
+    wrapper.appendChild(midSpace)
+
+    const translatedSpan = ownerDoc.createElement('span')
+    translatedSpan.className = `${NOTRANSLATE_CLASS} ${INLINE_CONTENT_CLASS} read-frog-translated-text`
+    translatedSpan.textContent = translatedText
+    wrapper.appendChild(translatedSpan)
+  }
+  else if (mode === 'translationOnly') {
+    const spaceNode = ownerDoc.createElement('span')
+    spaceNode.textContent = '  '
+    wrapper.appendChild(spaceNode)
+
+    const translatedSpan = ownerDoc.createElement('span')
+    translatedSpan.className = `${NOTRANSLATE_CLASS} ${INLINE_CONTENT_CLASS}`
+    translatedSpan.textContent = translatedText
+    wrapper.appendChild(translatedSpan)
+  }
+  else {
+    // originalHidden
+    const spaceNode = ownerDoc.createElement('span')
+    spaceNode.textContent = '  '
+    wrapper.appendChild(spaceNode)
+
+    const originalSpan = ownerDoc.createElement('span')
+    originalSpan.className = `${NOTRANSLATE_CLASS} read-frog-original-hidden`
+    originalSpan.textContent = originalText
+    originalSpan.style.display = 'none'
+    wrapper.appendChild(originalSpan)
+
+    const translatedSpan = ownerDoc.createElement('span')
+    translatedSpan.className = `${NOTRANSLATE_CLASS} ${INLINE_CONTENT_CLASS}`
+    translatedSpan.textContent = translatedText
+    wrapper.appendChild(translatedSpan)
+  }
+}
+
+function appendBlockBilingualContent(
+  wrapper: HTMLElement,
+  ownerDoc: Document,
+  originalText: string,
+  translatedText: string,
+  mode: RenderingMode,
+): void {
+  if (mode === 'bilingual') {
+    const originalSpan = ownerDoc.createElement('span')
+    originalSpan.className = `${NOTRANSLATE_CLASS} read-frog-original-text`
+    originalSpan.textContent = originalText
+    wrapper.appendChild(originalSpan)
+
+    const br = ownerDoc.createElement('br')
+    wrapper.appendChild(br)
+
+    const translatedSpan = ownerDoc.createElement('span')
+    translatedSpan.className = `${NOTRANSLATE_CLASS} ${BLOCK_CONTENT_CLASS} read-frog-translated-text`
+    translatedSpan.textContent = translatedText
+    wrapper.appendChild(translatedSpan)
+  }
+  else if (mode === 'translationOnly') {
+    const brNode = ownerDoc.createElement('br')
+    wrapper.appendChild(brNode)
+
+    const translatedSpan = ownerDoc.createElement('span')
+    translatedSpan.className = `${NOTRANSLATE_CLASS} ${BLOCK_CONTENT_CLASS}`
+    translatedSpan.textContent = translatedText
+    wrapper.appendChild(translatedSpan)
+  }
+  else {
+    // originalHidden
+    const originalSpan = ownerDoc.createElement('span')
+    originalSpan.className = `${NOTRANSLATE_CLASS} read-frog-original-hidden`
+    originalSpan.textContent = originalText
+    originalSpan.style.display = 'none'
+    wrapper.appendChild(originalSpan)
+
+    const brNode = ownerDoc.createElement('br')
+    wrapper.appendChild(brNode)
+
+    const translatedSpan = ownerDoc.createElement('span')
+    translatedSpan.className = `${NOTRANSLATE_CLASS} ${BLOCK_CONTENT_CLASS}`
+    translatedSpan.textContent = translatedText
+    wrapper.appendChild(translatedSpan)
+  }
 }

@@ -12,7 +12,8 @@ import {
   MAIN_CONTENT_IGNORE_TAGS,
 } from '@/utils/constants/dom-tags'
 
-import { translateConsecutiveInlineNodes, translateNode } from '../translate/node-manipulation'
+import { translateConsecutiveInlineNodes, translateConsecutiveInlineNodesWithMode, translateNode, translateNodeWithMode } from '../translate/node-manipulation'
+import type { IRenderStrategy } from '../translate/render-strategy'
 import {
   isDontWalkIntoElement,
   isHTMLElement,
@@ -202,12 +203,14 @@ export function walkAndLabelElement(
  * @param element - The element to translate
  * @param walkId - The walk id
  * @param toggle - Whether to toggle the translation, if true, the translation will be removed if it already exists
+ * @param strategy - Optional render strategy. If provided, uses strategy-based rendering instead of legacy rendering.
  */
 export async function translateWalkedElement(
   element: HTMLElement,
   walkId: string,
   toggle: boolean = false,
-) {
+  strategy?: IRenderStrategy,
+): Promise<void> {
   const promises: Promise<void>[] = []
 
   // if the walkId is not the same, return
@@ -225,7 +228,12 @@ export async function translateWalkedElement(
     }
 
     if (!hasBlockNodeChild) {
-      promises.push(translateNode(element, toggle))
+      if (strategy) {
+        promises.push(translateNodeWithMode(element, strategy, toggle))
+      }
+      else {
+        promises.push(translateNode(element, toggle))
+      }
     }
     else {
       // prevent children change during iteration
@@ -244,17 +252,27 @@ export async function translateWalkedElement(
           continue
         }
         else if (consecutiveInlineNodes.length) {
-          promises.push(dealWithConsecutiveInlineNodes(consecutiveInlineNodes, toggle))
+          if (strategy) {
+            promises.push(dealWithConsecutiveInlineNodesWithMode(consecutiveInlineNodes, strategy, toggle))
+          }
+          else {
+            promises.push(dealWithConsecutiveInlineNodes(consecutiveInlineNodes, toggle))
+          }
           consecutiveInlineNodes = []
         }
 
         if (isHTMLElement(child)) {
-          promises.push(translateWalkedElement(child, walkId, toggle))
+          promises.push(translateWalkedElement(child, walkId, toggle, strategy))
         }
       }
 
       if (consecutiveInlineNodes.length) {
-        promises.push(dealWithConsecutiveInlineNodes(consecutiveInlineNodes, toggle))
+        if (strategy) {
+          promises.push(dealWithConsecutiveInlineNodesWithMode(consecutiveInlineNodes, strategy, toggle))
+        }
+        else {
+          promises.push(dealWithConsecutiveInlineNodes(consecutiveInlineNodes, toggle))
+        }
         consecutiveInlineNodes = []
       }
     }
@@ -263,13 +281,13 @@ export async function translateWalkedElement(
     const promises: Promise<void>[] = []
     for (const child of element.childNodes) {
       if (isHTMLElement(child)) {
-        promises.push(translateWalkedElement(child, walkId, toggle))
+        promises.push(translateWalkedElement(child, walkId, toggle, strategy))
       }
     }
     if (element.shadowRoot) {
       for (const child of element.shadowRoot.children) {
         if (isHTMLElement(child)) {
-          promises.push(translateWalkedElement(child, walkId, toggle))
+          promises.push(translateWalkedElement(child, walkId, toggle, strategy))
         }
       }
     }
@@ -311,6 +329,23 @@ async function dealWithConsecutiveInlineNodes(nodes: TransNode[], toggle: boolea
   }
   else if (nodes.length === 1) {
     await translateNode(nodes[0], toggle)
+  }
+}
+
+async function dealWithConsecutiveInlineNodesWithMode(
+  nodes: TransNode[],
+  strategy: IRenderStrategy,
+  toggle: boolean = false,
+) {
+  if (nodes.length > 1) {
+    const lastNode = nodes[nodes.length - 1]
+    if (isHTMLElement(lastNode)) {
+      lastNode.setAttribute(CONSECUTIVE_INLINE_END_ATTRIBUTE, '')
+    }
+    await translateConsecutiveInlineNodesWithMode(nodes, strategy, toggle)
+  }
+  else if (nodes.length === 1) {
+    await translateNodeWithMode(nodes[0], strategy, toggle)
   }
 }
 

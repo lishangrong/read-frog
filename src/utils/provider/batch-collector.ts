@@ -4,6 +4,8 @@ import type {
   TranslateRequest,
   TranslateResult,
 } from '@/types/provider/contract'
+import type { BatchItem } from './batch-validation'
+import { BatchSemanticValidator } from './batch-validation'
 
 export interface BatchCollectorOptions {
   /** Max items to collect before auto-flushing */
@@ -16,6 +18,8 @@ interface PendingItem {
   request: TranslateRequest
   resolve: (result: TranslateResult) => void
   reject: (error: Error) => void
+  /** Optional DOM context for semantic validation */
+  domContext?: BatchItem['domContext']
 }
 
 /**
@@ -30,6 +34,7 @@ interface PendingItem {
 export class BatchCollector {
   private pending: PendingItem[] = []
   private flushTimer: ReturnType<typeof setTimeout> | null = null
+  private semanticValidator: BatchSemanticValidator = new BatchSemanticValidator()
 
   constructor(
     private provider: IProviderContract,
@@ -62,6 +67,39 @@ export class BatchCollector {
     if (items.length === 0)
       return
 
+    // Semantic validation gate: check if items can be safely batched
+    if (items.length > 1) {
+      const batchItems: BatchItem[] = items.map(item => ({
+        text: item.request.text,
+        sourceLang: item.request.sourceLang,
+        domContext: item.domContext,
+      }))
+
+      const validation = this.semanticValidator.validate(batchItems)
+
+      if (!validation.isValid) {
+        // suggestSplit returns sub-batches of BatchItem[]; we need to map
+        // back to our PendingItem[] using the fact that they share the same indices
+        const subBatchItems = this.semanticValidator.suggestSplit(batchItems, validation)
+
+        // Calculate cumulative sizes to slice the original PendingItem[] array
+        const subPendingBatches: PendingItem[][] = []
+        let offset = 0
+        for (const subBatch of subBatchItems) {
+          subPendingBatches.push(items.slice(offset, offset + subBatch.length))
+          offset += subBatch.length
+        }
+
+        await Promise.all(subPendingBatches.map(sub => this.processItems(sub)))
+        return
+      }
+    }
+
+    await this.processItems(items)
+  }
+
+  /** Process a batch of items through the translation pipeline */
+  private async processItems(items: PendingItem[]): Promise<void> {
     try {
       let results: TranslateResult[]
 

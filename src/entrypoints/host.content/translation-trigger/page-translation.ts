@@ -1,6 +1,8 @@
 import { isDontWalkIntoElement, isHTMLElement, isIFrameElement } from '@/utils/host/dom/filter'
 import { deepQueryTopLevelSelector, translateWalkedElement, walkAndLabelElement } from '@/utils/host/dom/traversal'
 import { removeAllTranslatedWrapperNodes } from '@/utils/host/translate/node-manipulation'
+import type { IRenderStrategy } from '@/utils/host/translate/render-strategy'
+import { createRenderStrategy } from '@/utils/host/translate/strategies'
 import { sendMessage } from '@/utils/message'
 
 // export function registerPageTranslationTriggers() {
@@ -84,6 +86,7 @@ export class PageTranslationManager {
   private id: string | null = null
   private options: IntersectionObserverInit
   private dontWalkIntoElementsCache = new WeakSet<HTMLElement>()
+  private renderStrategy: IRenderStrategy | null = null
 
   constructor(options: IntersectionObserverInit = { root: null, rootMargin: '0px', threshold: 0.1 }) {
     this.options = options
@@ -92,6 +95,14 @@ export class PageTranslationManager {
 
   get isActive(): boolean {
     return this.isAutoTranslated
+  }
+
+  /**
+   * Set the render strategy for translations.
+   * If null, uses the legacy rendering (translation only).
+   */
+  setRenderStrategy(strategy: IRenderStrategy | null): void {
+    this.renderStrategy = strategy
   }
 
   start(): void {
@@ -112,7 +123,7 @@ export class PageTranslationManager {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           if (isHTMLElement(entry.target)) {
-            translateWalkedElement(entry.target, this.id!)
+            translateWalkedElement(entry.target, this.id!, false, this.renderStrategy ?? undefined)
           }
           observer.unobserve(entry.target)
         }
