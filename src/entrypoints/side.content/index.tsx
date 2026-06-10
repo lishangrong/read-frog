@@ -15,9 +15,11 @@ import ReactDOM from 'react-dom/client'
 import { toast } from 'sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { configAtom } from '@/utils/atoms/config'
+import { ttsErrorAtom, ttsPlaybackStateAtom } from '@/utils/atoms/tts'
 import { APP_NAME } from '@/utils/constants/app'
 import { CONFIG_STORAGE_KEY, DEFAULT_CONFIG } from '@/utils/constants/config'
 import { protectSelectAllShadowRoot } from '@/utils/select-all'
+import { TTSEngine } from '@/utils/tts-engine'
 import { addStyleToShadow, mirrorDynamicStyles } from '../../utils/styles'
 import App from './app'
 
@@ -27,6 +29,9 @@ import '@/assets/tailwind/theme.css'
 import '@/entrypoints/host.content/style.css'
 
 export let shadowWrapper: HTMLElement | null = null
+
+/** Global TTS engine instance — created once when the content script loads */
+let ttsEngine: TTSEngine | null = null
 
 export default defineContentScript({
   matches: ['*://*/*'],
@@ -52,11 +57,6 @@ export default defineContentScript({
 
         addStyleToShadow(shadow)
         mirrorDynamicStyles('#_goober', shadow)
-        // mirrorDynamicStyles(
-        //   "style[type='text/css']",
-        //   shadow,
-        //   ".with-scroll-bars-hidden22"
-        // );
 
         protectSelectAllShadowRoot(shadowHost, wrapper)
 
@@ -89,6 +89,7 @@ export default defineContentScript({
         }
 
         buildTranslationPort()
+        initTTSEngine()
 
         root.render(
           <QueryClientProvider client={queryClient}>
@@ -110,6 +111,8 @@ export default defineContentScript({
         return { root, wrapper }
       },
       onRemove: (elements) => {
+        ttsEngine?.destroy()
+        ttsEngine = null
         elements?.root.unmount()
         elements?.wrapper.remove()
         shadowWrapper = null
@@ -132,4 +135,20 @@ function buildTranslationPort() {
       }
     }
   })
+}
+
+/**
+ * Initialize the TTS engine with Jotai store bindings.
+ * The engine listens for custom events dispatched by the UI
+ * and controls the Web Speech API accordingly.
+ */
+function initTTSEngine() {
+  ttsEngine = new TTSEngine(
+    (state) => {
+      store.set(ttsPlaybackStateAtom, state)
+    },
+    (error) => {
+      store.set(ttsErrorAtom, error)
+    },
+  )
 }

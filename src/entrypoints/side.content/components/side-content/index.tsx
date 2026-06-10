@@ -3,6 +3,8 @@ import { useAtom, useAtomValue } from 'jotai'
 import { Toaster } from 'sonner'
 
 import { APIConfigWarning } from '@/components/api-config-warning'
+import TTSControlPanel from '@/components/tts-control-panel'
+import VideoSubtitleOverlay from '@/components/video-subtitle-overlay'
 import { configFields } from '@/utils/atoms/config'
 import { isAnyAPIKey } from '@/utils/config/config'
 import { APP_NAME } from '@/utils/constants/app'
@@ -18,6 +20,7 @@ export default function SideContent() {
   const [sideContent, setSideContent] = useAtom(configFields.sideContent)
   const [isResizing, setIsResizing] = useState(false)
   const providersConfig = useAtomValue(configFields.providersConfig)
+  const ttsConfig = useAtomValue(configFields.tts)
 
   // Setup resize handlers
   useEffect(() => {
@@ -115,6 +118,12 @@ export default function SideContent() {
           )}
           <Metadata className="mx-3" />
           <Content />
+          {/* TTS control panel in the side panel */}
+          {ttsConfig.enabled && (
+            <div className="mx-3 mt-auto">
+              <TTSControlPanel />
+            </div>
+          )}
         </div>
         <Toaster richColors className="z-[2147483647]" duration={10000} />
       </div>
@@ -123,6 +132,9 @@ export default function SideContent() {
       {isResizing && (
         <div className="fixed inset-0 z-[2147483647] cursor-ew-resize bg-transparent" />
       )}
+
+      {/* Video subtitle translation overlay (rendered outside the side panel) */}
+      <VideoSubtitleOverlay />
     </>
   )
 }

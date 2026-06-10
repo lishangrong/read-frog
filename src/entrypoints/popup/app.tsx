@@ -12,8 +12,10 @@ import QuickLinks from './components/quick-links'
 import ReadButton from './components/read-button'
 import ReadProviderSelector from './components/read-provider-selector'
 import RenderingModeSelector from './components/rendering-mode-selector'
+import SubtitleToggle from './components/subtitle-toggle'
 import TranslateButton from './components/translate-button'
 import TranslateProviderSelector from './components/translate-provider-selector'
+import TTSToggle from './components/tts-toggle'
 
 function App() {
   const initIsIgnoreTab = useSetAtom(initIsIgnoreTabAtom)
@@ -36,6 +38,8 @@ function App() {
         <AlwaysTranslate />
         <Hotkey />
         <FloatingButton />
+        <TTSToggle />
+        <SubtitleToggle />
         <QuickLinks />
       </div>
       <div className="flex items-center justify-between bg-neutral-200 px-2 py-1 dark:bg-neutral-800">

@@ -26,7 +26,7 @@ import { apiProviderNames, pureTranslateProvider, readProviderNames, translatePr
 import { omit, pick } from '@/types/utils'
 
 export const CONFIG_STORAGE_KEY = 'config'
-export const CONFIG_SCHEMA_VERSION = 8
+export const CONFIG_SCHEMA_VERSION = 9
 
 export const MIN_SIDE_CONTENT_WIDTH = 400 // px
 export const DEFAULT_SIDE_CONTENT_WIDTH = 400 // px
@@ -174,6 +174,16 @@ export const DEFAULT_CONFIG: Config = {
   },
   rendering: {
     mode: 'bilingual',
+  },
+  tts: {
+    enabled: true,
+    speed: 1.0,
+    voiceId: 'alloy',
+    volume: 1.0,
+  },
+  subtitle: {
+    enabled: true,
+    autoTranslate: true,
   },
 }
 
