@@ -27,6 +27,20 @@ options:
       deepseek: Recommend to use in China
       openrouter: The unified interface for multiple LLM providers
       ollama: Local LLM
+      gemini: Google's Gemini models
+      claude: Anthropic's Claude models
+      groq: Ultra-fast inference engine
+      mistral: European AI lab, Mistral models
+      xai: xAI's Grok models
+      moonshot: Moonshot AI (Kimi)
+      zhipu: Zhipu AI (ChatGLM)
+      baichuan: Baichuan AI
+      minimax: MiniMax AI
+      stepfun: StepFun AI
+      lingyi: Yi / Lingyi AI
+      qwen: Alibaba's Qwen models
+      doubao: ByteDance's Doubao models
+      hunyuan: Tencent's Hunyuan models
     apiKey:
       showAPIKey: Show API Key
     advancedConfig:

@@ -24,7 +24,7 @@ import { configAtom, configFields } from '@/utils/atoms/config'
 import { isAnyAPIKey } from '@/utils/config/config'
 import { getAnalyzePrompt } from '@/utils/prompts/analyze'
 import { getExplainPrompt } from '@/utils/prompts/explain'
-import { getTranslateModel as getReadModel } from '@/utils/provider'
+import { getReadModel } from '@/utils/provider'
 
 interface ExplainArticleParams {
   extractedContent: ExtractedContent

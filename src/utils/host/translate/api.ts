@@ -1,7 +1,7 @@
-import type { LLMTranslateProviderNames } from '@/types/config/provider'
+import type { APIProviderNames } from '@/types/config/provider'
 import { generateText } from 'ai'
 
-export async function aiTranslate(provider: LLMTranslateProviderNames, modelString: string, prompt: string) {
+export async function aiTranslate(provider: APIProviderNames, modelString: string, prompt: string) {
   const model = await getTranslateModel(provider, modelString)
   const { text } = await generateText({
     model,

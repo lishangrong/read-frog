@@ -61,12 +61,13 @@ storage.watch<Config>(`local:${CONFIG_STORAGE_KEY}`, (newConfig) => {
 
 export function isAnyAPIKey(providersConfig: ProvidersConfig) {
   return Object.values(providersConfig).some((providerConfig) => {
-    return providerConfig.apiKey
+    return typeof providerConfig.apiKey === 'string' && providerConfig.apiKey.trim().length > 0
   })
 }
 
 export function hasSetAPIKey(provider: APIProviderNames, providersConfig: ProvidersConfig) {
-  return providersConfig[provider]?.apiKey !== undefined
+  const key = providersConfig[provider]?.apiKey
+  return typeof key === 'string' && key.trim().length > 0
 }
 
 export async function loadAPIKeyFromEnv() {

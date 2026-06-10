@@ -27,6 +27,20 @@ options:
       deepseek: 推荐在中国使用
       openrouter: 多个 LLM 提供商的统一接口
       ollama: 本地大模型服务
+      gemini: Google Gemini 模型
+      claude: Anthropic Claude 模型
+      groq: 超快推理引擎
+      mistral: 欧洲 AI 实验室 Mistral 模型
+      xai: xAI Grok 模型
+      moonshot: 月之暗面（Kimi）
+      zhipu: 智谱 AI（ChatGLM）
+      baichuan: 百川智能
+      minimax: MiniMax
+      stepfun: 阶跃星辰
+      lingyi: 零一万物（Yi）
+      qwen: 阿里通义千问
+      doubao: 字节跳动豆包
+      hunyuan: 腾讯混元
     apiKey:
       showAPIKey: 显示 API Key
     advancedConfig:

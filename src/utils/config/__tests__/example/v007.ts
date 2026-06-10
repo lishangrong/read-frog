@@ -1,8 +1,8 @@
-import type { Config } from '@/types/config/config'
-
 export const description = 'Add autoTranslate config'
 
-export const configExample: Config = {
+// v007 config uses the old shape before v008 provider expansion
+// typed as any because it predates the new provider fields
+export const configExample: any = {
   language: {
     detectedCode: 'eng',
     sourceCode: 'auto',

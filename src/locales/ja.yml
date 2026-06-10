@@ -26,6 +26,21 @@ options:
       openai: GPT-4oなどのモデルを提供
       deepseek: 中国国内での使用を推奨
       openrouter: 複数のLLMプロバイダを統合するインターフェース
+      ollama: ローカルLLM
+      gemini: GoogleのGeminiモデル
+      claude: AnthropicのClaudeモデル
+      groq: 超高速推論エンジン
+      mistral: 欧州AIラボMistralモデル
+      xai: xAIのGrokモデル
+      moonshot: Moonshot AI（Kimi）
+      zhipu: 智譜AI（ChatGLM）
+      baichuan: 百川AI
+      minimax: MiniMax AI
+      stepfun: StepFun AI
+      lingyi: Yi / 零一万物
+      qwen: アリババのQwenモデル
+      doubao: ByteDanceのDoubaoモデル
+      hunyuan: テンセントのHunyuanモデル
     apiKey:
       showAPIKey: APIキーを表示
     advancedConfig:
