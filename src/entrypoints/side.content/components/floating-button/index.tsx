@@ -9,7 +9,9 @@ import { APP_NAME } from '@/utils/constants/app'
 import { isSideOpenAtom } from '../../atoms'
 import HiddenButton from './components/hidden-button'
 import FloatingReadButton from './floating-read-button'
+import SubtitleButton from './subtitle-button'
 import TranslateButton from './translate-button'
+import TtsButton from './tts-button'
 
 export default function FloatingButton() {
   const [floatingButton, setFloatingButton] = useAtom(
@@ -107,6 +109,8 @@ export default function FloatingButton() {
       >
         <FloatingReadButton />
         <TranslateButton />
+        <SubtitleButton />
+        <TtsButton />
         <div
           className={cn(
             'border-border flex h-10 w-15 items-center rounded-l-full border border-r-0 bg-white opacity-60 shadow-lg group-hover:opacity-100 dark:bg-neutral-900',

@@ -33,6 +33,19 @@ export default defineBackground(() => {
     sendMessage('readArticle', undefined, message.data.tabId)
   })
 
+  // Subtitle state management (per-tab)
+  const tabSubtitleState = new Map<number, boolean>()
+
+  onMessage('getSubtitleEnabled', (msg) => {
+    const { tabId } = msg.data
+    return tabSubtitleState.get(tabId)
+  })
+
+  onMessage('setSubtitleEnabled', (msg) => {
+    const { tabId, enabled } = msg.data
+    tabSubtitleState.set(tabId, enabled)
+  })
+
   newUserGuide()
   translationMessage()
 

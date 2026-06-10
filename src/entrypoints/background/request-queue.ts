@@ -1,6 +1,7 @@
 import { aiTranslate, googleTranslate, microsoftTranslate } from '@/utils/host/translate/api'
 import { BatchRequestManager, buildBatchTranslatePrompt, parseBatchTranslateResponse } from '@/utils/request/batch-request-manager'
 import { RequestQueue } from '@/utils/request/request-queue'
+import { handleTtsRequest } from './tts'
 
 const batchManagers = new Map<string, BatchRequestManager>()
 
@@ -52,6 +53,9 @@ export function setUpRequestQueue() {
         const manager = getBatchManager(data.params.provider, data.params.modelString, data.params.targetLang)
         return manager.enqueue(data.params.text)
       }
+      case 'tts':
+        thunk = () => handleTtsRequest(data.params as any)
+        break
       default:
         throw new Error(`Unknown request type: ${data.type}`)
     }

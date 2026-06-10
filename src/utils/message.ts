@@ -14,8 +14,11 @@ interface ProtocolMap {
   pinStateChanged: (data: { isPinned: boolean }) => void
   getPinState: () => boolean
   returnPinState: (data: { isPinned: boolean }) => void
+  // subtitle
+  setSubtitleEnabled: (data: { tabId: number, enabled: boolean }) => void
+  getSubtitleEnabled: (data: { tabId: number }) => boolean | undefined
   // request
-  enqueueRequest: (data: { type: 'googleTranslate' | 'microsoftTranslate' | 'aiTranslate' | 'batchAiTranslate' | 'selectionTranslate', params: Record<string, any>, scheduleAt: number, hash: string, priority?: number }) => Promise<any>
+  enqueueRequest: (data: { type: 'googleTranslate' | 'microsoftTranslate' | 'aiTranslate' | 'batchAiTranslate' | 'selectionTranslate' | 'tts', params: Record<string, any>, scheduleAt: number, hash: string, priority?: number }) => Promise<any>
 }
 
 export const { sendMessage, onMessage }

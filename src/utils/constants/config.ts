@@ -1,5 +1,7 @@
 import type { Config } from '@/types/config/config'
 import type { AllProviderNames, DisplayMode, PageTranslateRange, ProvidersConfig, ReadModels, TranslateModels } from '@/types/config/provider'
+import type { SubtitleConfig, SubtitleDisplayMode, SubtitlePosition } from '@/types/config/subtitle'
+import type { TtsConfig, TtsProvider, TtsVoice } from '@/types/config/tts'
 import baichuanLogo from '@/assets/provider/baichuan.png'
 import claudeLogo from '@/assets/provider/claude.png'
 import deepseekLogo from '@/assets/provider/deepseek.png'
@@ -24,7 +26,7 @@ import { apiProviderNames, pureTranslateProvider, readProviderNames, translatePr
 import { omit, pick } from '@/types/utils'
 
 export const CONFIG_STORAGE_KEY = 'config'
-export const CONFIG_SCHEMA_VERSION = 9
+export const CONFIG_SCHEMA_VERSION = 10
 
 export const MIN_SIDE_CONTENT_WIDTH = 400 // px
 export const DEFAULT_SIDE_CONTENT_WIDTH = 400 // px
@@ -315,6 +317,21 @@ export const DEFAULT_CONFIG: Config = {
   sideContent: {
     width: DEFAULT_SIDE_CONTENT_WIDTH,
   },
+  tts: {
+    enabled: false,
+    provider: 'webSpeech',
+    voice: 'alloy',
+    speed: 1,
+    autoPlay: false,
+  },
+  subtitle: {
+    enabled: false,
+    displayMode: 'bilingual',
+    position: 'below',
+    fontSize: 16,
+    opacity: 0.85,
+    autoDetect: true,
+  },
 }
 
 export const PROVIDER_ITEMS: Record<AllProviderNames, { logo: string, name: string }>
@@ -441,4 +458,47 @@ export const DISPLAY_MODE_ITEMS: Record<
   bilingual: { label: 'Bilingual' },
   translationOnly: { label: 'Translation Only' },
   originalHidden: { label: 'Original Hidden' },
+}
+
+export const TTS_SPEED_MIN = 0.25
+export const TTS_SPEED_MAX = 4
+export const TTS_SPEED_STEP = 0.25
+export const TTS_SPEED_DEFAULT = 1
+
+export const TTS_PROVIDER_ITEMS: Record<
+  TtsProvider,
+  { label: string }
+> = {
+  webSpeech: { label: 'Web Speech' },
+  openai: { label: 'OpenAI TTS' },
+}
+
+export const TTS_VOICE_ITEMS: Record<
+  TtsVoice,
+  { label: string, description: string }
+> = {
+  alloy: { label: 'Alloy', description: 'Neutral and balanced' },
+  echo: { label: 'Echo', description: 'Warm and rounded' },
+  fable: { label: 'Fable', description: 'Expressive and animated' },
+  onyx: { label: 'Onyx', description: 'Deep and authoritative' },
+  nova: { label: 'Nova', description: 'Friendly and upbeat' },
+  shimmer: { label: 'Shimmer', description: 'Clear and bright' },
+}
+
+export const SUBTITLE_DISPLAY_MODE_ITEMS: Record<
+  SubtitleDisplayMode,
+  { label: string }
+> = {
+  bilingual: { label: 'Bilingual' },
+  translationOnly: { label: 'Translation Only' },
+  off: { label: 'Off' },
+}
+
+export const SUBTITLE_POSITION_ITEMS: Record<
+  SubtitlePosition,
+  { label: string }
+> = {
+  below: { label: 'Below' },
+  above: { label: 'Above' },
+  side: { label: 'Side' },
 }

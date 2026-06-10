@@ -17,7 +17,7 @@ export const PROVIDER_SERVICE_MAP: Record<AllProviderNames, readonly ServiceType
   google: ['translate'],
   microsoft: ['translate'],
   // LLM providers (support both read and translate)
-  openai: ['read', 'translate'],
+  openai: ['read', 'translate', 'tts'],
   deepseek: ['read', 'translate'],
   openrouter: ['translate'],
   ollama: ['read', 'translate'],

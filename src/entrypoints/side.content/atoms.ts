@@ -13,10 +13,12 @@ export const progressAtom = atom({
 export const translationPortAtom = atom<Browser.runtime.Port | null>(null)
 export const enablePageTranslationAtom = atom(false)
 
-// export const explainAtom = atomWithMutation(() => ({
-//   mutationKey: ["explainArticle"],
-//   mutationFn: mutationFn,
-// }));
+// Subtitle state
+export const subtitleEnabledAtom = atom(false)
+
+// TTS state
+export const ttsPlaybackStateAtom = atom<'idle' | 'playing' | 'paused'>('idle')
+export const ttsCurrentTextAtom = atom<string>('')
 
 export const readStateAtom = atom<
   'extracting' | 'analyzing' | 'continue?' | 'explaining' | undefined

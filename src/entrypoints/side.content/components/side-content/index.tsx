@@ -3,6 +3,7 @@ import { useAtom, useAtomValue } from 'jotai'
 import { Toaster } from 'sonner'
 
 import { APIConfigWarning } from '@/components/api-config-warning'
+import { TtsPanel } from '@/components/tts-controls'
 import { configFields } from '@/utils/atoms/config'
 import { isAnyAPIKey } from '@/utils/config/config'
 import { APP_NAME } from '@/utils/constants/app'
@@ -18,6 +19,7 @@ export default function SideContent() {
   const [sideContent, setSideContent] = useAtom(configFields.sideContent)
   const [isResizing, setIsResizing] = useState(false)
   const providersConfig = useAtomValue(configFields.providersConfig)
+  const ttsConfig = useAtomValue(configFields.tts)
 
   // Setup resize handlers
   useEffect(() => {
@@ -114,6 +116,11 @@ export default function SideContent() {
             <APIConfigWarning className="mx-3" />
           )}
           <Metadata className="mx-3" />
+          {ttsConfig.enabled && (
+            <div className="mx-3">
+              <TtsPanel />
+            </div>
+          )}
           <Content />
         </div>
         <Toaster richColors className="z-[2147483647]" duration={10000} />
