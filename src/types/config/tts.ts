@@ -18,6 +18,12 @@ export const ttsVoiceSchema = z.object({
 export type TTSVoice = z.infer<typeof ttsVoiceSchema>
 
 /**
+ * TTS provider identifiers.
+ */
+export const ttsProviderSchema = z.enum(['web-speech', 'openai'])
+export type TTSProviderId = z.infer<typeof ttsProviderSchema>
+
+/**
  * TTS configuration stored in the extension config.
  */
 export const ttsConfigSchema = z.object({
@@ -29,6 +35,14 @@ export const ttsConfigSchema = z.object({
   voiceId: z.string(),
   /** Audio volume (0.0 – 1.0) */
   volume: z.number().min(0).max(1),
+  /** TTS provider backend */
+  provider: ttsProviderSchema,
+  /** TTS model (e.g. 'tts-1' for fast, 'tts-1-hd' for high quality) */
+  model: z.string(),
+  /** Audio output format */
+  format: z.string(),
+  /** Whether to auto-preload TTS audio when selection translation completes */
+  preloadOnTranslate: z.boolean(),
 })
 
 export type TTSConfig = z.infer<typeof ttsConfigSchema>

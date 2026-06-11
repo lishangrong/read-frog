@@ -1,9 +1,10 @@
-import { useAtom, useAtomValue } from 'jotai'
-import { Pause, Play, Square, Volume2, VolumeX } from 'lucide-react'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { Pause, Play, SkipBack, SkipForward, Square, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
 import {
   Select,
   SelectContent,
@@ -15,14 +16,19 @@ import { cn } from '@/utils/tailwind'
 import {
   AVAILABLE_TTS_VOICES,
   TTS_SPEED_PRESETS,
+  ttsCacheStatusAtom,
   ttsErrorAtom,
   ttsPlaybackStateAtom,
+  ttsProgressAtom,
+  ttsProviderAtom,
   ttsSelectedVoiceAtom,
   ttsSpeedAtom,
   ttsTextAtom,
   ttsVoiceIdAtom,
+  ttsVoicesForProviderAtom,
   ttsVolumeAtom,
 } from '@/utils/atoms/tts'
+import type { TTSProviderId } from '@/utils/tts/types'
 
 /**
  * Format a speed value for display (e.g. "1.5x").
@@ -32,14 +38,35 @@ function formatSpeed(speed: number): string {
 }
 
 /**
+ * Format seconds to mm:ss display.
+ */
+function formatTime(seconds: number): string {
+  if (!seconds || !isFinite(seconds)) return '0:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+/**
+ * TTS provider options.
+ */
+const TTS_PROVIDERS: { value: TTSProviderId, label: string }[] = [
+  { value: 'web-speech', label: 'Web Speech (Free)' },
+  { value: 'openai', label: 'OpenAI TTS' },
+]
+
+/**
  * TTS Control Panel component.
  *
  * Provides a full-featured text-to-speech control surface:
- * - Voice selector (multiple AI voices)
+ * - Provider selector (Web Speech / OpenAI TTS)
+ * - Voice selector (filtered by provider and language)
  * - Speed control (0.25x – 4.0x) via slider + preset buttons
  * - Play / Pause / Stop transport controls
+ * - Skip forward/backward buttons
+ * - Progress bar with seek and time display
  * - Volume slider
- * - Current text preview
+ * - Cache status indicator
  * - Error display
  */
 export default function TTSControlPanel() {
@@ -48,11 +75,14 @@ export default function TTSControlPanel() {
   const [speed, setSpeed] = useAtom(ttsSpeedAtom)
   const [voiceId, setVoiceId] = useAtom(ttsVoiceIdAtom)
   const [volume, setVolume] = useAtom(ttsVolumeAtom)
-  const selectedVoice = useAtomValue(ttsSelectedVoiceAtom)
+  const [provider, setProvider] = useAtom(ttsProviderAtom)
+  const [progress, setProgress] = useAtom(ttsProgressAtom)
+  const cacheStatus = useAtomValue(ttsCacheStatusAtom)
+  const availableVoices = useAtomValue(ttsVoicesForProviderAtom)
   const error = useAtomValue(ttsErrorAtom)
 
   const [inputText, setInputText] = useState(ttsText)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const progressBarRef = useRef<HTMLDivElement>(null)
 
   // Sync external text updates into the input field
   useEffect(() => {
@@ -61,7 +91,7 @@ export default function TTSControlPanel() {
 
   /**
    * Start TTS playback.
-   * Dispatches a custom event consumed by the TTS engine in the host script.
+   * Dispatches a custom event consumed by the TTS engine.
    */
   const handlePlay = useCallback(() => {
     if (!inputText.trim())
@@ -69,36 +99,34 @@ export default function TTSControlPanel() {
 
     setTtsText(inputText)
     setPlaybackState('loading')
+    setProgress({ currentTime: 0, duration: 0, percentage: 0 })
 
     const event = new CustomEvent('read-frog:tts-play', {
-      detail: { text: inputText, speed, voiceId, volume },
+      detail: { text: inputText, speed, voiceId, volume, provider, model: 'tts-1', format: 'mp3' },
     })
     document.dispatchEvent(event)
-  }, [inputText, speed, voiceId, volume, setTtsText, setPlaybackState])
+  }, [inputText, speed, voiceId, volume, provider, setTtsText, setPlaybackState, setProgress])
 
   const handlePause = useCallback(() => {
-    setPlaybackState('paused')
     const event = new CustomEvent('read-frog:tts-pause', {})
     document.dispatchEvent(event)
-  }, [setPlaybackState])
+  }, [])
 
   const handleResume = useCallback(() => {
-    setPlaybackState('playing')
     const event = new CustomEvent('read-frog:tts-resume', {})
     document.dispatchEvent(event)
-  }, [setPlaybackState])
+  }, [])
 
   const handleStop = useCallback(() => {
-    setPlaybackState('idle')
     setTtsText('')
     setInputText('')
+    setProgress({ currentTime: 0, duration: 0, percentage: 0 })
     const event = new CustomEvent('read-frog:tts-stop', {})
     document.dispatchEvent(event)
-  }, [setPlaybackState, setTtsText])
+  }, [setTtsText, setProgress])
 
   const handleSpeedChange = useCallback((newSpeed: number) => {
     setSpeed(newSpeed)
-    // Notify active playback to update rate
     if (playbackState === 'playing') {
       const event = new CustomEvent('read-frog:tts-set-speed', {
         detail: { speed: newSpeed },
@@ -107,10 +135,36 @@ export default function TTSControlPanel() {
     }
   }, [setSpeed, playbackState])
 
+  const handleSkip = useCallback((seconds: number) => {
+    const event = new CustomEvent('read-frog:tts-skip', {
+      detail: { seconds },
+    })
+    document.dispatchEvent(event)
+  }, [])
+
+  const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current || progress.duration <= 0) return
+
+    const rect = progressBarRef.current.getBoundingClientRect()
+    const percentage = ((e.clientX - rect.left) / rect.width) * 100
+
+    const event = new CustomEvent('read-frog:tts-seek', {
+      detail: { percentage: Math.max(0, Math.min(100, percentage)) },
+    })
+    document.dispatchEvent(event)
+  }, [progress.duration])
+
+  const handleProviderChange = useCallback((newProvider: string) => {
+    setProvider(newProvider as TTSProviderId)
+    // Reset voice to first available for the new provider
+    // Voice will be set when the voices list updates
+  }, [setProvider])
+
   const isIdle = playbackState === 'idle'
   const isLoading = playbackState === 'loading'
   const isPlaying = playbackState === 'playing'
   const isPaused = playbackState === 'paused'
+  const isOpenAI = provider === 'openai'
 
   return (
     <Card className="gap-3 py-3">
@@ -136,6 +190,23 @@ export default function TTSControlPanel() {
           onChange={e => setInputText(e.target.value)}
         />
 
+        {/* Provider selector */}
+        <div className="flex items-center gap-2">
+          <span className="w-14 text-xs font-medium text-neutral-500 dark:text-neutral-400">Engine</span>
+          <Select value={provider} onValueChange={handleProviderChange}>
+            <SelectTrigger size="sm" className="flex-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TTS_PROVIDERS.map(p => (
+                <SelectItem key={p.value} value={p.value}>
+                  {p.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Voice selector */}
         <div className="flex items-center gap-2">
           <span className="w-14 text-xs font-medium text-neutral-500 dark:text-neutral-400">Voice</span>
@@ -144,12 +215,14 @@ export default function TTSControlPanel() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {AVAILABLE_TTS_VOICES.map(voice => (
+              {availableVoices.map(voice => (
                 <SelectItem key={voice.id} value={voice.id}>
                   <span className="flex items-center gap-2">
                     {voice.name}
                     <span className="text-xs text-neutral-400">
-                      ({voice.gender})
+                      ({voice.gender}
+                      {voice.lang !== 'en' ? `, ${voice.lang}` : ''}
+                      )
                     </span>
                   </span>
                 </SelectItem>
@@ -195,6 +268,28 @@ export default function TTSControlPanel() {
           </div>
         </div>
 
+        {/* Progress bar (AI TTS only) */}
+        {isOpenAI && (isPlaying || isPaused || isLoading) && (
+          <div className="flex flex-col gap-1">
+            <div
+              ref={progressBarRef}
+              className="cursor-pointer"
+              onClick={handleProgressClick}
+              role="slider"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress.percentage}
+              tabIndex={0}
+            >
+              <Progress value={progress.percentage} className="h-2" />
+            </div>
+            <div className="flex justify-between text-[10px] text-neutral-500 dark:text-neutral-400">
+              <span>{formatTime(progress.currentTime)}</span>
+              <span>{formatTime(progress.duration)}</span>
+            </div>
+          </div>
+        )}
+
         {/* Volume control */}
         <div className="flex items-center gap-2">
           <button
@@ -228,6 +323,11 @@ export default function TTSControlPanel() {
             >
               <Play className="h-3.5 w-3.5" fill="currentColor" />
               Play
+              {cacheStatus.isCached && (
+                <span className="ml-1 rounded bg-green-100 px-1 py-0.5 text-[8px] font-medium text-green-700 dark:bg-green-900 dark:text-green-300">
+                  Cached
+                </span>
+              )}
             </Button>
           )}
 
@@ -240,6 +340,17 @@ export default function TTSControlPanel() {
 
           {isPlaying && (
             <>
+              {/* Skip backward */}
+              {isOpenAI && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleSkip(-10)}
+                  title="Rewind 10s"
+                >
+                  <SkipBack className="h-3.5 w-3.5" />
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"
@@ -258,6 +369,17 @@ export default function TTSControlPanel() {
                 <Square className="h-3.5 w-3.5" fill="currentColor" />
                 Stop
               </Button>
+              {/* Skip forward */}
+              {isOpenAI && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleSkip(10)}
+                  title="Forward 10s"
+                >
+                  <SkipForward className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </>
           )}
 
@@ -283,6 +405,14 @@ export default function TTSControlPanel() {
             </>
           )}
         </div>
+
+        {/* Cache status indicator */}
+        {cacheStatus.isPreloading && (
+          <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 dark:text-neutral-400">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-blue-400" />
+            Preloading audio...
+          </div>
+        )}
 
         {/* Error display */}
         {error && (

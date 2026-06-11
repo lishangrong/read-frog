@@ -15,7 +15,7 @@ import ReactDOM from 'react-dom/client'
 import { toast } from 'sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { configAtom } from '@/utils/atoms/config'
-import { ttsErrorAtom, ttsPlaybackStateAtom } from '@/utils/atoms/tts'
+import { ttsErrorAtom, ttsPlaybackStateAtom, ttsProgressAtom } from '@/utils/atoms/tts'
 import { APP_NAME } from '@/utils/constants/app'
 import { CONFIG_STORAGE_KEY, DEFAULT_CONFIG } from '@/utils/constants/config'
 import { protectSelectAllShadowRoot } from '@/utils/select-all'
@@ -140,7 +140,7 @@ function buildTranslationPort() {
 /**
  * Initialize the TTS engine with Jotai store bindings.
  * The engine listens for custom events dispatched by the UI
- * and controls the Web Speech API accordingly.
+ * and controls speech synthesis accordingly.
  */
 function initTTSEngine() {
   ttsEngine = new TTSEngine(
@@ -149,6 +149,9 @@ function initTTSEngine() {
     },
     (error) => {
       store.set(ttsErrorAtom, error)
+    },
+    (progress) => {
+      store.set(ttsProgressAtom, progress)
     },
   )
 }

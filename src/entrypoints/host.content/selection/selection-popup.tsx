@@ -101,11 +101,32 @@ export class SelectionPopup {
     const wrapper = document.createElement('div')
     wrapper.className = 'selection-popup'
 
+    // Header row with translation text and speak button
+    const headerRow = document.createElement('div')
+    headerRow.className = 'header-row'
+
     // Translation text
     const translationEl = document.createElement('div')
     translationEl.className = 'translation-text'
     translationEl.textContent = result.translatedText
-    wrapper.appendChild(translationEl)
+    headerRow.appendChild(translationEl)
+
+    // Speak button
+    const speakBtn = document.createElement('button')
+    speakBtn.className = 'speak-button'
+    speakBtn.title = 'Read aloud'
+    speakBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`
+    speakBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      // Dispatch event for TTS engine to speak the translated text
+      const event = new CustomEvent('read-frog:speak-selection', {
+        detail: { text: result.translatedText },
+      })
+      document.dispatchEvent(event)
+    })
+    headerRow.appendChild(speakBtn)
+
+    wrapper.appendChild(headerRow)
 
     // Explanation (if present — varies by language level)
     if (result.explanation) {
@@ -193,6 +214,38 @@ export class SelectionPopup {
         color: #1a1a1a;
         margin-bottom: 4px;
         word-break: break-word;
+        flex: 1;
+      }
+
+      .header-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .speak-button {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: none;
+        border-radius: 6px;
+        background: #f1f5f9;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        padding: 0;
+      }
+
+      .speak-button:hover {
+        background: #e2e8f0;
+        color: #1e293b;
+      }
+
+      .speak-button:active {
+        transform: scale(0.95);
       }
 
       .divider {
@@ -230,6 +283,16 @@ export class SelectionPopup {
         }
 
         .translation-text {
+          color: #f1f5f9;
+        }
+
+        .speak-button {
+          background: #334155;
+          color: #94a3b8;
+        }
+
+        .speak-button:hover {
+          background: #475569;
           color: #f1f5f9;
         }
 

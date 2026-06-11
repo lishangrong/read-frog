@@ -18,6 +18,8 @@ interface ProtocolMap {
   enqueueRequest: (data: { type: string, params: Record<string, any>, scheduleAt: number, hash: string }) => Promise<any>
   // request — new unified format using provider registry
   translateRequest: (data: { providerId: string, text: string, sourceLang: string, targetLang: string, scheduleAt: number, hash: string }) => Promise<string>
+  // TTS synthesis — calls OpenAI TTS API in background
+  ttsSynthesize: (data: { text: string, voiceId: string, speed: number, model: string, format: string }) => Promise<{ audio: string }>
 }
 
 export const { sendMessage, onMessage }

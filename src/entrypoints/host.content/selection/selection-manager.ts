@@ -146,6 +146,15 @@ export class SelectionManager {
       const position = this.getSelectionPosition(selection)
       if (position) {
         this.popup.show(position, result)
+
+        // Trigger TTS preloading for the translated text
+        // The TTS engine will pick up this event and preload audio
+        const preloadEvent = new CustomEvent('read-frog:tts-preload', {
+          detail: {
+            text: result.translatedText,
+          },
+        })
+        document.dispatchEvent(preloadEvent)
       }
     }
     catch (error) {

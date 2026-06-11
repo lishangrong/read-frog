@@ -2,6 +2,7 @@ import { initializeConfig, isAnyAPIKey, loadAPIKeyFromEnv } from '@/utils/config
 import { CONFIG_SCHEMA_VERSION } from '@/utils/constants/config'
 import { newUserGuide } from './new-user-guide'
 import { setUpRequestQueue } from './request-queue'
+import { setUpTTSHandler } from './tts'
 import { translationMessage } from './translation'
 
 export default defineBackground(() => {
@@ -43,6 +44,7 @@ export default defineBackground(() => {
 
   newUserGuide()
   translationMessage()
+  setUpTTSHandler()
 
   setUpRequestQueue()
 })
