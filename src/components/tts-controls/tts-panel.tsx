@@ -1,34 +1,43 @@
-import { useAtom, useAtomValue } from 'jotai'
-import { Pause, Play, Square } from 'lucide-react'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { Pause, Play, SkipBack, SkipForward, Square } from 'lucide-react'
+import { useEffect } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { configFields } from '@/utils/atoms/config'
 import { getAudioController } from '@/utils/tts/audio-controller'
-import { ttsCurrentTextAtom, ttsPlaybackStateAtom } from '@/entrypoints/side.content/atoms'
+import { sanitizeTextForTts } from '@/utils/tts/text-sanitizer'
+import { ttsCurrentTextAtom, ttsPlaybackStateAtom, ttsProgressAtom } from '@/entrypoints/side.content/atoms'
 import { SpeedSlider } from './speed-slider'
 import { VoiceSelector } from './voice-selector'
+import { ProgressBar } from './progress-bar'
 
 export function TtsPanel() {
   const ttsConfig = useAtomValue(configFields.tts)
   const language = useAtomValue(configFields.language)
   const [ttsState, setTtsState] = useAtom(ttsPlaybackStateAtom)
   const currentText = useAtomValue(ttsCurrentTextAtom)
+  const setProgress = useSetAtom(ttsProgressAtom)
+  const progress = useAtomValue(ttsProgressAtom)
 
   const controller = getAudioController()
 
-  // Sync controller state with atom
+  // Sync controller state and progress with atoms
   useEffect(() => {
     controller.onStateChange = (state) => {
       setTtsState(state)
     }
+    controller.onProgress = (current, total) => {
+      setProgress({ current, total })
+    }
     return () => {
       controller.onStateChange = null
+      controller.onProgress = null
     }
-  }, [controller, setTtsState])
+  }, [controller, setTtsState, setProgress])
 
   const handlePlay = () => {
     const selectedText = window.getSelection()?.toString()?.trim()
-    const text = selectedText || document.title
+    const text = sanitizeTextForTts(selectedText || document.title)
     if (!text)
       return
 
@@ -50,6 +59,7 @@ export function TtsPanel() {
 
   const handleStop = () => {
     controller.stop()
+    setProgress({ current: 0, total: 0 })
   }
 
   return (
@@ -57,6 +67,17 @@ export function TtsPanel() {
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-muted-foreground">TTS</span>
         <div className="flex items-center gap-1">
+          {/* Skip Back */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => controller.skipBackward()}
+            disabled={ttsState === 'idle'}
+          >
+            <SkipBack className="h-3.5 w-3.5" />
+          </Button>
+          {/* Play / Pause */}
           <Button
             variant="ghost"
             size="icon"
@@ -67,6 +88,17 @@ export function TtsPanel() {
               ? <Pause className="h-3.5 w-3.5" />
               : <Play className="h-3.5 w-3.5" />}
           </Button>
+          {/* Skip Forward */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => controller.skipForward()}
+            disabled={ttsState === 'idle'}
+          >
+            <SkipForward className="h-3.5 w-3.5" />
+          </Button>
+          {/* Stop */}
           <Button
             variant="ghost"
             size="icon"
@@ -78,6 +110,11 @@ export function TtsPanel() {
           </Button>
         </div>
       </div>
+
+      {/* Progress bar */}
+      {ttsState !== 'idle' && progress.total > 0 && (
+        <ProgressBar current={progress.current} total={progress.total} />
+      )}
 
       <SpeedSlider />
       <VoiceSelector />

@@ -26,7 +26,7 @@ import { apiProviderNames, pureTranslateProvider, readProviderNames, translatePr
 import { omit, pick } from '@/types/utils'
 
 export const CONFIG_STORAGE_KEY = 'config'
-export const CONFIG_SCHEMA_VERSION = 10
+export const CONFIG_SCHEMA_VERSION = 11
 
 export const MIN_SIDE_CONTENT_WIDTH = 400 // px
 export const DEFAULT_SIDE_CONTENT_WIDTH = 400 // px
@@ -471,6 +471,7 @@ export const TTS_PROVIDER_ITEMS: Record<
 > = {
   webSpeech: { label: 'Web Speech' },
   openai: { label: 'OpenAI TTS' },
+  edgeTts: { label: 'Edge TTS' },
 }
 
 export const TTS_VOICE_ITEMS: Record<

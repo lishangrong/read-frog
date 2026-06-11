@@ -18,7 +18,7 @@ interface ProtocolMap {
   setSubtitleEnabled: (data: { tabId: number, enabled: boolean }) => void
   getSubtitleEnabled: (data: { tabId: number }) => boolean | undefined
   // request
-  enqueueRequest: (data: { type: 'googleTranslate' | 'microsoftTranslate' | 'aiTranslate' | 'batchAiTranslate' | 'selectionTranslate' | 'tts', params: Record<string, any>, scheduleAt: number, hash: string, priority?: number }) => Promise<any>
+  enqueueRequest: (data: { type: 'googleTranslate' | 'microsoftTranslate' | 'aiTranslate' | 'batchAiTranslate' | 'selectionTranslate' | 'tts' | 'edgeTts', params: Record<string, any>, scheduleAt: number, hash: string, priority?: number }) => Promise<any>
 }
 
 export const { sendMessage, onMessage }

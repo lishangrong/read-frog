@@ -19,6 +19,7 @@ export const subtitleEnabledAtom = atom(false)
 // TTS state
 export const ttsPlaybackStateAtom = atom<'idle' | 'playing' | 'paused'>('idle')
 export const ttsCurrentTextAtom = atom<string>('')
+export const ttsProgressAtom = atom<{ current: number, total: number }>({ current: 0, total: 0 })
 
 export const readStateAtom = atom<
   'extracting' | 'analyzing' | 'continue?' | 'explaining' | undefined

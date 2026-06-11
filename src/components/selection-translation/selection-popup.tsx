@@ -1,14 +1,17 @@
 import type { SelectionTranslation } from '@/types/selection-translation'
 import { useEffect, useState } from 'react'
 import { DetailPanel } from './detail-panel'
+import { preloadTtsAudio } from '@/utils/tts/preload'
 
 interface SelectionPopupProps {
   selectedText: string
   translationPromise: Promise<SelectionTranslation>
   onDismiss: () => void
+  ttsConfig?: { enabled: boolean, voice: string, speed: number, provider: 'webSpeech' | 'openai' | 'edgeTts' }
+  targetLang?: string
 }
 
-export function SelectionPopup({ selectedText, translationPromise, onDismiss }: SelectionPopupProps) {
+export function SelectionPopup({ selectedText, translationPromise, onDismiss, ttsConfig, targetLang }: SelectionPopupProps) {
   const [result, setResult] = useState<SelectionTranslation | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -30,6 +33,18 @@ export function SelectionPopup({ selectedText, translationPromise, onDismiss }: 
       })
     return () => { cancelled = true }
   }, [translationPromise])
+
+  // Preload TTS audio when translation completes
+  useEffect(() => {
+    if (result && ttsConfig?.enabled && targetLang) {
+      preloadTtsAudio(result.translation, {
+        voice: ttsConfig.voice,
+        speed: ttsConfig.speed,
+        lang: targetLang,
+        provider: ttsConfig.provider,
+      })
+    }
+  }, [result, ttsConfig, targetLang])
 
   return (
     <div

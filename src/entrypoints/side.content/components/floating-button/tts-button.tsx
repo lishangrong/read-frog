@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { configFields } from '@/utils/atoms/config'
 import { hasSetAPIKey } from '@/utils/config/config'
 import { getAudioController } from '@/utils/tts/audio-controller'
+import { sanitizeTextForTts } from '@/utils/tts/text-sanitizer'
 import { ttsPlaybackStateAtom } from '../../atoms'
 import HiddenButton from './components/hidden-button'
 
@@ -31,9 +32,9 @@ export default function TtsButton() {
           return
         }
 
-        // Get selected text or page title
+        // Get selected text or page title, sanitized for TTS
         const selectedText = window.getSelection()?.toString()?.trim()
-        const text = selectedText || document.title
+        const text = sanitizeTextForTts(selectedText || document.title)
 
         if (!text) {
           toast.error('No text to read aloud')

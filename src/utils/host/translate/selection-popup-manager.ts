@@ -5,6 +5,7 @@ import themeCSS from '@/assets/tailwind/theme.css?inline'
 import { createReactShadowHost, removeReactShadowHost } from '@/utils/react-shadow-host/create-shadow-host'
 import { NOTRANSLATE_CLASS } from '@/utils/constants/dom-labels'
 import { SelectionPopup } from '@/components/selection-translation/selection-popup'
+import { globalConfig } from '@/utils/config/config'
 
 const POPUP_HOST_CLASS = 'read-frog-selection-popup-host'
 
@@ -21,6 +22,8 @@ export function showSelectionPopup(
     selectedText,
     translationPromise,
     onDismiss: dismissSelectionPopup,
+    ttsConfig: globalConfig?.tts,
+    targetLang: globalConfig?.language?.targetCode,
   })
 
   const host = createReactShadowHost(popupElement, {

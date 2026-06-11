@@ -2,6 +2,7 @@ import { aiTranslate, googleTranslate, microsoftTranslate } from '@/utils/host/t
 import { BatchRequestManager, buildBatchTranslatePrompt, parseBatchTranslateResponse } from '@/utils/request/batch-request-manager'
 import { RequestQueue } from '@/utils/request/request-queue'
 import { handleTtsRequest } from './tts'
+import { handleEdgeTtsRequest } from './edge-tts'
 
 const batchManagers = new Map<string, BatchRequestManager>()
 
@@ -55,6 +56,9 @@ export function setUpRequestQueue() {
       }
       case 'tts':
         thunk = () => handleTtsRequest(data.params as any)
+        break
+      case 'edgeTts':
+        thunk = () => handleEdgeTtsRequest(data.params as any)
         break
       default:
         throw new Error(`Unknown request type: ${data.type}`)

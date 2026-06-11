@@ -7,7 +7,7 @@ import { z } from 'zod'
 export const ttsVoices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'] as const
 export type TtsVoice = typeof ttsVoices[number]
 
-export const ttsProviders = ['webSpeech', 'openai'] as const
+export const ttsProviders = ['webSpeech', 'openai', 'edgeTts'] as const
 export type TtsProvider = typeof ttsProviders[number]
 
 /* ──────────────────────────────
@@ -17,7 +17,7 @@ export type TtsProvider = typeof ttsProviders[number]
 export const ttsConfigSchema = z.object({
   enabled: z.boolean(),
   provider: z.enum(ttsProviders),
-  voice: z.enum(ttsVoices),
+  voice: z.string(),
   speed: z.number().min(0.25).max(4),
   autoPlay: z.boolean(),
 })

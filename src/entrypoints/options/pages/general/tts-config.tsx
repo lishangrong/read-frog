@@ -1,16 +1,29 @@
-import { useAtom } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import type { TtsProvider, TtsVoice } from '@/types/config/tts'
+import type { TtsProvider } from '@/types/config/tts'
 import { ttsVoices } from '@/types/config/tts'
 import { configFields } from '@/utils/atoms/config'
 import { TTS_PROVIDER_ITEMS, TTS_SPEED_MAX, TTS_SPEED_MIN, TTS_SPEED_STEP, TTS_VOICE_ITEMS } from '@/utils/constants/config'
+import { getDefaultEdgeTtsVoice, getEdgeTtsVoicesByLang } from '@/utils/tts/edge-tts-voices'
 import { ConfigCard } from '../../components/config-card'
 import { FieldWithLabel } from '../../components/field-with-label'
 
 export function TtsConfig() {
   const [ttsConfig, setTtsConfig] = useAtom(configFields.tts)
+  const language = useAtomValue(configFields.language)
+
+  const handleProviderChange = (value: TtsProvider) => {
+    let defaultVoice = ttsConfig.voice
+    if (value === 'openai') {
+      defaultVoice = 'alloy'
+    }
+    else if (value === 'edgeTts') {
+      defaultVoice = getDefaultEdgeTtsVoice(language.targetCode)
+    }
+    setTtsConfig({ ...ttsConfig, provider: value, voice: defaultVoice })
+  }
 
   return (
     <ConfigCard title="Text-to-Speech" description="Configure text-to-speech settings for reading text aloud.">
@@ -27,7 +40,7 @@ export function TtsConfig() {
         <FieldWithLabel id="ttsProvider" label="Provider">
           <Select
             value={ttsConfig.provider}
-            onValueChange={(value: TtsProvider) => setTtsConfig({ ...ttsConfig, provider: value })}
+            onValueChange={handleProviderChange}
           >
             <SelectTrigger className="w-full">
               <SelectValue />
@@ -42,12 +55,12 @@ export function TtsConfig() {
           </Select>
         </FieldWithLabel>
 
-        {/* Voice (OpenAI only) */}
+        {/* Voice (OpenAI) */}
         {ttsConfig.provider === 'openai' && (
           <FieldWithLabel id="ttsVoice" label="Voice">
             <Select
               value={ttsConfig.voice}
-              onValueChange={(value: TtsVoice) => setTtsConfig({ ...ttsConfig, voice: value })}
+              onValueChange={(value: string) => setTtsConfig({ ...ttsConfig, voice: value })}
             >
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -57,13 +70,39 @@ export function TtsConfig() {
                   {ttsVoices.map(voice => (
                     <SelectItem key={voice} value={voice}>
                       {TTS_VOICE_ITEMS[voice].label}
-                      {' '}
-                      -
-                      {' '}
+                      {' - '}
                       {TTS_VOICE_ITEMS[voice].description}
                     </SelectItem>
                   ))}
                 </SelectGroup>
+              </SelectContent>
+            </Select>
+          </FieldWithLabel>
+        )}
+
+        {/* Voice (Edge TTS - grouped by language) */}
+        {ttsConfig.provider === 'edgeTts' && (
+          <FieldWithLabel id="ttsVoice" label="Voice">
+            <Select
+              value={ttsConfig.voice}
+              onValueChange={(value: string) => setTtsConfig({ ...ttsConfig, voice: value })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(getEdgeTtsVoicesByLang()).map(([lang, voices]) => (
+                  <SelectGroup key={lang}>
+                    <SelectLabel>{lang}</SelectLabel>
+                    {voices.map(voice => (
+                      <SelectItem key={voice.id} value={voice.id}>
+                        {voice.label}
+                        {' - '}
+                        {voice.gender}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
               </SelectContent>
             </Select>
           </FieldWithLabel>

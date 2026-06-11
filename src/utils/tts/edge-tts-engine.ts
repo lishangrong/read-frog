@@ -1,16 +1,16 @@
 import type { TtsEngine, TtsPlaybackState, TtsSpeakOptions, TtsVoiceInfo } from './tts-engine'
-import type { TtsVoice } from '@/types/config/tts'
-import { ttsVoices } from '@/types/config/tts'
+import { EDGE_TTS_VOICES } from './edge-tts-voices'
 import { Sha256Hex } from '@/utils/hash'
 import { sendMessage } from '@/utils/message'
 import { getTtsAudioCache } from './audio-cache'
 
 /**
- * TTS engine using OpenAI's /v1/audio/speech API.
- * Requires an API key configured for the OpenAI provider.
+ * TTS engine using Microsoft Edge TTS service.
+ * Free, multi-language, multi-voice. No API key required.
+ * Audio is synthesized via background script WebSocket connection.
  * Integrates with audio cache for instant playback on cache hits.
  */
-export class OpenAITtsEngine implements TtsEngine {
+export class EdgeTtsEngine implements TtsEngine {
   private audio: HTMLAudioElement | null = null
   private _state: TtsPlaybackState = 'idle'
   onStateChange: ((state: TtsPlaybackState) => void) | null = null
@@ -27,7 +27,7 @@ export class OpenAITtsEngine implements TtsEngine {
   async speak(text: string, options: TtsSpeakOptions): Promise<void> {
     this.stop()
 
-    const voice = options.voice as TtsVoice
+    const voice = options.voice || 'en-US-AriaNeural'
     const speed = options.speed
     const cache = getTtsAudioCache()
     const cacheKey = cache.buildKey(text, voice, speed)
@@ -38,7 +38,7 @@ export class OpenAITtsEngine implements TtsEngine {
     if (!audioBase64) {
       // Cache miss: request from background script
       audioBase64 = await sendMessage('enqueueRequest', {
-        type: 'tts',
+        type: 'edgeTts',
         params: {
           text,
           voice,
@@ -80,7 +80,7 @@ export class OpenAITtsEngine implements TtsEngine {
         this.setState('idle')
         URL.revokeObjectURL(audioUrl)
         this.audio = null
-        reject(new Error('Failed to play audio'))
+        reject(new Error('Failed to play Edge TTS audio'))
       }
 
       audio.play().catch(reject)
@@ -110,9 +110,10 @@ export class OpenAITtsEngine implements TtsEngine {
   }
 
   async getVoices(): Promise<TtsVoiceInfo[]> {
-    return ttsVoices.map(voice => ({
-      id: voice,
-      name: voice.charAt(0).toUpperCase() + voice.slice(1),
+    return EDGE_TTS_VOICES.map(v => ({
+      id: v.id,
+      name: `${v.label} (${v.gender})`,
+      lang: v.lang,
     }))
   }
 

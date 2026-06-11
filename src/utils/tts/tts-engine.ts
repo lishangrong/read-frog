@@ -33,7 +33,7 @@ export interface TtsEngine {
   Engine factory
   ────────────────────────────── */
 
-export type TtsProviderType = 'webSpeech' | 'openai'
+export type TtsProviderType = 'webSpeech' | 'openai' | 'edgeTts'
 
 let currentEngine: TtsEngine | null = null
 
@@ -53,6 +53,11 @@ export async function getTtsEngine(provider: TtsProviderType): Promise<TtsEngine
     case 'openai': {
       const { OpenAITtsEngine } = await import('./openai-tts-engine')
       currentEngine = new OpenAITtsEngine()
+      break
+    }
+    case 'edgeTts': {
+      const { EdgeTtsEngine } = await import('./edge-tts-engine')
+      currentEngine = new EdgeTtsEngine()
       break
     }
     default:
